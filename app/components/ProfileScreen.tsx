@@ -10,7 +10,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Image,
+  KeyboardAvoidingView,
 } from "react-native";
 import {
   ChevronRight,
@@ -20,7 +20,6 @@ import {
   HelpCircle,
   LogOut,
   CheckCircle,
-  Camera,
   Phone,
   Mail,
   MapPin,
@@ -30,15 +29,12 @@ import {
   Plus,
   Building2,
   Moon,
-  Calendar,
 } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
-import { DatePickerModal } from "./DatePickerModal";
 import { useApp } from "../context";
 import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
-import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 
 interface ProfileScreenProps {
@@ -47,8 +43,6 @@ interface ProfileScreenProps {
 
 export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile } = useApp();
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [biometric, setBiometric] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,51 +59,6 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const email = userProfile?.email || "carlos.mendoza@email.com";
   const isVerified = userProfile?.isVerified || false;
   const kycStatus = userProfile?.kycStatus || "pending";
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Denied", "We need media library permissions to upload your profile photo.");
-      return;
-    }
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets && result.assets[0].uri) {
-        setProfileImage(result.assets[0].uri);
-        setShowPhotoPicker(false);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not pick image. Please try again.");
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Denied", "We need camera permissions to take a photo.");
-      return;
-    }
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets && result.assets[0].uri) {
-        setProfileImage(result.assets[0].uri);
-        setShowPhotoPicker(false);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not take photo. Please try again.");
-    }
-  };
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -148,7 +97,6 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
       return new Date(1995, 9, 12);
     }
   });
-  const [showBirthdayPicker, setShowBirthdayPicker] = useState(false);
   const [tempPhone, setTempPhone] = useState(phone);
   const [tempEmail, setTempEmail] = useState(email);
 
@@ -343,35 +291,8 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         <View style={styles.flatCard}>
           <View style={styles.profileHeaderRow}>
             
-            <View style={{ position: "relative" }}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowPhotoPicker(true);
-                }}
-                style={styles.avatarCircle}
-              >
-                {profileImage ? (
-                  <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
-                )}
-              </TouchableOpacity>
-              <AnimatedButton
-                style={styles.cameraBtnWrapper}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowPhotoPicker(true);
-                }}
-              >
-                <LinearGradient
-                  colors={["#10B981", "#059669"]}
-                  style={styles.cameraBtn}
-                >
-                  <Camera size={10} color="#ffffff" />
-                </LinearGradient>
-              </AnimatedButton>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
             </View>
 
             
@@ -590,107 +511,64 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         <View style={styles.modalForm}>
           <View style={styles.modalInputGroup}>
             <Text style={styles.modalLabel}>FULL NAME</Text>
-            <TextInput
-              value={tempName}
-              onChangeText={setTempName}
-              style={styles.modalInput}
-              placeholder="Full Name"
-              placeholderTextColor="#9aa3b5"
-            />
+            <View style={styles.modalValueBox}>
+              <Text style={styles.modalValueText}>{tempName}</Text>
+            </View>
           </View>
           <View style={styles.modalInputGroup}>
             <Text style={styles.modalLabel}>DATE OF BIRTH</Text>
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowBirthdayPicker(true);
-              }}
-              style={styles.modalDatePickerButton}
-            >
-              <Calendar size={16} color="#10B981" style={{ marginRight: 8 }} />
-              <Text style={styles.modalDatePickerText}>
+            <View style={styles.modalValueBox}>
+              <Text style={styles.modalValueText}>
                 {tempBirthdayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
-
-          <TouchableOpacity
-            style={styles.modalSaveBtnWrapper}
-            onPress={async () => {
-              if (!tempName.trim()) {
-                Alert.alert("Error", "Name cannot be empty.");
-                return;
-              }
-              try {
-                const dobFormatted = tempBirthdayDate.toISOString().split('T')[0];
-                await updateUserProfile({
-                  fullName: tempName,
-                  birthday: dobFormatted,
-                });
-                setShowPersonalInfo(false);
-                Alert.alert("Success", "Personal Information updated successfully!");
-              } catch (e: any) {
-                Alert.alert("Update Failed", e.message || "Failed to update profile.");
-              }
-            }}
-          >
-            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
-              <Text style={styles.modalSaveBtnText}>Save Changes</Text>
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
       </BottomSheet>
-
-      <DatePickerModal
-        visible={showBirthdayPicker}
-        date={tempBirthdayDate}
-        onConfirm={(date) => {
-          setTempBirthdayDate(date);
-          setShowBirthdayPicker(false);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }}
-        onCancel={() => setShowBirthdayPicker(false)}
-        title="Select Date of Birth"
-      />
 
       <BottomSheet
         isOpen={showPhone}
         onClose={() => setShowPhone(false)}
         title="Update Phone Number"
       >
-        <View style={styles.modalForm}>
-          <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>NEW PHONE NUMBER</Text>
-            <TextInput
-              value={tempPhone}
-              onChangeText={setTempPhone}
-              style={styles.modalInput}
-              placeholder="+63 912 345 6789"
-              placeholderTextColor="#9aa3b5"
-              keyboardType="phone-pad"
-            />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        >
+          <View style={styles.modalForm}>
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalLabel}>NEW PHONE NUMBER</Text>
+              <TextInput
+                value={tempPhone}
+                onChangeText={setTempPhone}
+                style={styles.modalInput}
+                placeholder="+63 912 345 6789"
+                placeholderTextColor="#9aa3b5"
+                keyboardType="phone-pad"
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.modalSaveBtnWrapper}
+              onPress={async () => {
+                if (!tempPhone.trim()) {
+                  Alert.alert("Error", "Phone number cannot be empty.");
+                  return;
+                }
+                try {
+                  await updateUserProfile({ phone: tempPhone });
+                  setShowPhone(false);
+                  Alert.alert("Success", "Phone number updated successfully!");
+                } catch (e: any) {
+                  Alert.alert("Update Failed", e.message || "Failed to update phone number.");
+                }
+              }}
+            >
+              <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+                <Text style={styles.modalSaveBtnText}>Update Phone</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.modalSaveBtnWrapper}
-            onPress={async () => {
-              if (!tempPhone.trim()) {
-                Alert.alert("Error", "Phone number cannot be empty.");
-                return;
-              }
-              try {
-                await updateUserProfile({ phone: tempPhone });
-                setShowPhone(false);
-                Alert.alert("Success", "Phone number updated successfully!");
-              } catch (e: any) {
-                Alert.alert("Update Failed", e.message || "Failed to update phone number.");
-              }
-            }}
-          >
-            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
-              <Text style={styles.modalSaveBtnText}>Update Phone</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+        </KeyboardAvoidingView>
       </BottomSheet>
 
       <BottomSheet
@@ -966,74 +844,6 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         </ScrollView>
       </BottomSheet>
 
-      <BottomSheet
-        isOpen={showPhotoPicker}
-        onClose={() => setShowPhotoPicker(false)}
-        title="Upload Profile Photo"
-      >
-        <View style={{ paddingBottom: 24, gap: 18 }}>
-          
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={takePhoto}
-              style={{
-                flex: 1,
-                backgroundColor: "#f1f5f9",
-                borderRadius: 14,
-                paddingVertical: 14,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1.5,
-                borderColor: "#e2e8f0",
-              }}
-            >
-              <Camera size={20} color="#10B981" />
-              <Text style={{ fontSize: 11, fontWeight: "800", color: "#334155", marginTop: 6 }}>Take Photo</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={pickImage}
-              style={{
-                flex: 1,
-                backgroundColor: "#f1f5f9",
-                borderRadius: 14,
-                paddingVertical: 14,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1.5,
-                borderColor: "#e2e8f0",
-              }}
-            >
-              <Plus size={20} color="#10B981" />
-              <Text style={{ fontSize: 11, fontWeight: "800", color: "#334155", marginTop: 6 }}>Choose Library</Text>
-            </TouchableOpacity>
-          </View>
-
-          
-          {profileImage && (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                setProfileImage(null);
-                setShowPhotoPicker(false);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }}
-              style={{
-                backgroundColor: "rgba(239, 68, 68, 0.08)",
-                borderRadius: 12,
-                paddingVertical: 10,
-                alignItems: "center",
-                justifyContent: "center",
-                marginTop: 6,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: "800", color: "#ef4444" }}>Remove Photo</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </BottomSheet>
     </View>
   );
 }
@@ -1083,14 +893,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#ffffff",
-    borderWidth: 1.5,
-    borderColor: "#cbd5e1",
+    backgroundColor: "#10B981",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitials: {
-    color: "#10B981",
+    color: "#ffffff",
     fontSize: 20,
     fontWeight: "800",
     letterSpacing: -0.5,
@@ -1401,6 +1209,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
+  modalValueBox: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  modalValueText: {
+    fontSize: 13,
+    color: "#2d3748",
+    fontWeight: "600",
+  },
   modalSaveBtnWrapper: {
     borderRadius: 14,
     overflow: "hidden",
@@ -1465,35 +1286,5 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
     zIndex: 999,
-  },
-  modalDatePickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 13,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  modalDatePickerText: {
-    fontSize: 13,
-    color: "#2d3748",
-    fontWeight: "600",
-  },
-  datePickerDoneButton: {
-    backgroundColor: "#10B981",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  datePickerDoneText: {
-    fontSize: 14,
-    color: "#ffffff",
-    fontWeight: "700",
   },
 });
