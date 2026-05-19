@@ -28,7 +28,24 @@ export function TransactionHistory() {
     transactions,
     fundingSources,
     activeFundingSourceId,
+    defaultCurrency,
   } = useApp();
+
+  const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
+
+  const formatAmount = (amt: number, txCurrency?: string) => {
+    const targetCurrency = txCurrency || "PHP";
+    if (targetCurrency === defaultCurrency) {
+      return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (targetCurrency === "PHP" && defaultCurrency === "USD") {
+      return (amt * 0.018).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (targetCurrency === "USD" && defaultCurrency === "PHP") {
+      return (amt / 0.018).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];
 
@@ -44,7 +61,7 @@ export function TransactionHistory() {
   const handleShare = async (tx: Transaction) => {
     try {
       await Share.share({
-        message: `Remittance details: Sent ₱${tx.amount.toLocaleString()} to ${tx.recipientName}. Ref ID: ${tx.id}`,
+        message: `Remittance details: Sent ${curSymbol}${formatAmount(tx.amount, tx.currency)} to ${tx.recipientName}. Ref ID: ${tx.id}`,
       });
     } catch (error) {
       console.log(error);
@@ -102,7 +119,7 @@ export function TransactionHistory() {
               </View>
               <View style={{ alignItems: "flex-end", gap: 3 }}>
                 <Text style={styles.txAmt}>
-                  ₱{tx.amount.toLocaleString()}
+                  {curSymbol}{formatAmount(tx.amount, tx.currency)}
                 </Text>
                 <View style={styles.completedBadge}>
                   <Text style={styles.completedText}>COMPLETED</Text>
@@ -150,7 +167,7 @@ export function TransactionHistory() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>AMOUNT SENT</Text>
                 <Text style={styles.detailValBold}>
-                  ₱{selectedTransaction.amount.toLocaleString()}
+                  {curSymbol}{formatAmount(selectedTransaction.amount, selectedTransaction.currency)}
                 </Text>
               </View>
 
@@ -168,7 +185,7 @@ export function TransactionHistory() {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>EXCHANGE RATE</Text>
                   <Text style={styles.detailVal}>
-                    ₱{selectedTransaction.exchangeRate.toFixed(2)}
+                    1 {selectedTransaction.currency || "PHP"} = {selectedTransaction.recipientCurrency === selectedTransaction.currency ? "1.00" : (selectedTransaction.recipientCurrency === "PHP" ? (1 / (selectedTransaction.exchangeRate || 1)) : (selectedTransaction.exchangeRate || 1)).toFixed(2)} {selectedTransaction.recipientCurrency}
                   </Text>
                 </View>
               )}
@@ -176,7 +193,7 @@ export function TransactionHistory() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>FEE</Text>
                 <Text style={styles.detailVal}>
-                  ₱{selectedTransaction.fee.toLocaleString()}
+                  {curSymbol}{formatAmount(selectedTransaction.fee, selectedTransaction.currency)}
                 </Text>
               </View>
 

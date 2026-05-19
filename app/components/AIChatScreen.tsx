@@ -10,7 +10,6 @@ import {
   Platform,
   SafeAreaView,
   ActivityIndicator,
-  Keyboard,
 } from "react-native";
 import {
   ArrowLeft,
@@ -496,23 +495,6 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      () => setKeyboardVisible(true)
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => setKeyboardVisible(false)
-    );
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
   useEffect(() => {
     autoScroll();
   }, [messages, isTyping]);
@@ -740,63 +722,59 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
           )}
 
           {/* Quick-action Chips list */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            style={styles.chipsScroll}
-            contentContainerStyle={styles.chipsContent}
-          >
-            {CHIPS.map((chip) => (
-              <AnimatedButton
-                key={chip}
-                onPress={() => handleSend(chip)}
-                style={styles.chipBtn}
-              >
-                <Text style={styles.chipBtnText}>{chip}</Text>
-              </AnimatedButton>
-            ))}
-          </ScrollView>
+          {messages.length <= 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              style={styles.chipsScroll}
+              contentContainerStyle={styles.chipsContent}
+            >
+              {CHIPS.map((chip) => (
+                <AnimatedButton
+                  key={chip}
+                  onPress={() => handleSend(chip)}
+                  style={styles.chipBtn}
+                >
+                  <Text style={styles.chipBtnText}>{chip}</Text>
+                </AnimatedButton>
+              ))}
+            </ScrollView>
+          )}
         </ScrollView>
 
         {/* Input Bar */}
-        <View style={styles.inputBar}>
-          <View style={styles.insetInputContainer}>
-            <TextInput
-              value={inputText}
-              onChangeText={setInputText}
-              onSubmitEditing={() => handleSend()}
-              placeholder='Try "Send ₱1000 to Maria"'
-              placeholderTextColor="#9aa3b5"
-              style={styles.textInput}
-            />
+        <SafeAreaView style={{ backgroundColor: "#ffffff" }}>
+          <View style={styles.inputBar}>
+            <View style={styles.insetInputContainer}>
+              <TextInput
+                value={inputText}
+                onChangeText={setInputText}
+                onSubmitEditing={() => handleSend()}
+                placeholder='Try "Send ₱1000 to Maria"'
+                placeholderTextColor="#9aa3b5"
+                style={styles.textInput}
+              />
+            </View>
+            <AnimatedButton
+              onPress={inputText.trim().length > 0 ? () => handleSend() : handleVoicePress}
+              style={styles.sendBtnWrapper}
+            >
+              {inputText.trim().length > 0 ? (
+                <LinearGradient
+                  colors={["#10B981", "#059669"]}
+                  style={styles.sendBtnActive}
+                >
+                  <ArrowUp size={18} color="#ffffff" />
+                </LinearGradient>
+              ) : (
+                <View style={styles.sendBtn}>
+                  <Mic size={18} color="#4a5568" />
+                </View>
+              )}
+            </AnimatedButton>
           </View>
-          <AnimatedButton
-            onPress={inputText.trim().length > 0 ? () => handleSend() : handleVoicePress}
-            style={styles.sendBtnWrapper}
-          >
-            {inputText.trim().length > 0 ? (
-              <LinearGradient
-                colors={["#10B981", "#059669"]}
-                style={styles.sendBtnActive}
-              >
-                <ArrowUp size={18} color="#ffffff" />
-              </LinearGradient>
-            ) : (
-              <View style={styles.sendBtn}>
-                <Mic size={18} color="#4a5568" />
-              </View>
-            )}
-          </AnimatedButton>
-        </View>
-        {!keyboardVisible && (
-          <View
-            style={{
-              height: Platform.OS === "ios" ? 28 : 12,
-              backgroundColor: "#ffffff",
-            }}
-          />
-        )}
+        </SafeAreaView>
       </View>
     </KeyboardAvoidingView>
   );

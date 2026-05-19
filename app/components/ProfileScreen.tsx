@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Switch,
   Platform,
+  TextInput,
+  Alert,
 } from "react-native";
 import {
   ChevronRight,
@@ -30,38 +32,179 @@ import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp } from "../context";
 import { AnimatedButton } from "./AnimatedButton";
+import { BottomSheet } from "./BottomSheet";
 
 export function ProfileScreen() {
-  const { fundingSources } = useApp();
+  const { fundingSources, defaultCurrency, setDefaultCurrency } = useApp();
   const [biometric, setBiometric] = useState(true);
   const [notifications, setNotifications] = useState(true);
+  const [twoFactor, setTwoFactor] = useState(true);
 
-  const settingSections = [
+  // Modal visibilities
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [showCurrencySelector, setShowCurrencySelector] = useState(false);
+  const [showHelpSupport, setShowHelpSupport] = useState(false);
+
+  // Account states
+  const [name, setName] = useState("Carlos Mendoza");
+  const [address, setAddress] = useState("123 Metro Manila, Philippines");
+  const [birthday, setBirthday] = useState("1995-10-12");
+
+  const [phone, setPhone] = useState("+63 912 345 6789");
+  const [email, setEmail] = useState("carlos.mendoza@email.com");
+
+  // PIN states
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState(false);
+
+  // Temporary edit states for modals
+  const [tempName, setTempName] = useState("Carlos Mendoza");
+  const [tempAddress, setTempAddress] = useState("123 Metro Manila, Philippines");
+  const [tempBirthday, setTempBirthday] = useState("1995-10-12");
+  const [tempPhone, setTempPhone] = useState("+63 912 345 6789");
+  const [tempEmail, setTempEmail] = useState("carlos.mendoza@email.com");
+
+  const settingSections: {
+    title: string;
+    items: {
+      icon: any;
+      label: string;
+      sublabel: string;
+      color: string;
+      badge?: string;
+      toggle?: boolean;
+      toggleVal?: boolean;
+      onToggle?: (val: boolean) => void;
+      onPress?: () => void;
+    }[];
+  }[] = [
     {
       title: "Account",
       items: [
-        { icon: User, label: "Personal Information", sublabel: "Name, address, birthday", color: "#10B981" },
-        { icon: Phone, label: "Phone Number", sublabel: "+63 912 345 6789", color: "#10B981" },
-        { icon: Mail, label: "Email Address", sublabel: "carlos.mendoza@email.com", color: "#10B981" },
+        {
+          icon: User,
+          label: "Personal Information",
+          sublabel: `${name} · ${birthday}`,
+          color: "#10B981",
+          onPress: () => {
+            setTempName(name);
+            setTempAddress(address);
+            setTempBirthday(birthday);
+            setShowPersonalInfo(true);
+          },
+        },
+        {
+          icon: Phone,
+          label: "Phone Number",
+          sublabel: phone,
+          color: "#10B981",
+          onPress: () => {
+            setTempPhone(phone);
+            setShowPhone(true);
+          },
+        },
+        {
+          icon: Mail,
+          label: "Email Address",
+          sublabel: email,
+          color: "#10B981",
+          onPress: () => {
+            setTempEmail(email);
+            setShowEmail(true);
+          },
+        },
       ],
     },
     {
       title: "Security",
       items: [
-        { icon: Lock, label: "Change PIN", sublabel: "Last changed 30 days ago", color: "#10B981" },
-        { icon: Shield, label: "Two-Factor Auth", sublabel: "Enabled via SMS", color: "#10B981", badge: "ON" },
-        { icon: Eye, label: "Biometric Login", sublabel: "Face ID / Fingerprint", color: "#10B981", toggle: true, toggleVal: biometric, onToggle: setBiometric },
+        {
+          icon: Lock,
+          label: "Change PIN",
+          sublabel: "Last changed 30 days ago",
+          color: "#10B981",
+          onPress: () => {
+            setCurrentPin("");
+            setNewPin("");
+            setConfirmPin("");
+            setPinError("");
+            setPinSuccess(false);
+            setShowPin(true);
+          },
+        },
+        {
+          icon: Shield,
+          label: "Two-Factor Auth",
+          sublabel: "Verification via SMS",
+          color: "#10B981",
+          toggle: true,
+          toggleVal: twoFactor,
+          onToggle: (val: boolean) => {
+            setTwoFactor(val);
+            Alert.alert("Two-Factor Auth", `SMS Two-Factor Authentication has been turned ${val ? "ON" : "OFF"}.`);
+          },
+        },
+        {
+          icon: Eye,
+          label: "Biometric Login",
+          sublabel: "Face ID / Fingerprint",
+          color: "#10B981",
+          toggle: true,
+          toggleVal: biometric,
+          onToggle: (val: boolean) => {
+            setBiometric(val);
+            Alert.alert("Biometrics", `Biometric Face ID / Fingerprint login has been turned ${val ? "ON" : "OFF"}.`);
+          },
+        },
       ],
     },
     {
       title: "Preferences",
       items: [
-        { icon: Bell, label: "Notifications", sublabel: "Transfers, promotions", color: "#10B981", toggle: true, toggleVal: notifications, onToggle: setNotifications },
-        { icon: MapPin, label: "Default Currency", sublabel: "PHP — Philippine Peso", color: "#10B981" },
-        { icon: HelpCircle, label: "Help & Support", sublabel: "FAQs, contact us", color: "#10B981" },
+        {
+          icon: Bell,
+          label: "Notifications",
+          sublabel: "Transfers, promotions",
+          color: "#10B981",
+          toggle: true,
+          toggleVal: notifications,
+          onToggle: (val: boolean) => {
+            setNotifications(val);
+            Alert.alert("Notifications", `App notifications have been ${val ? "enabled" : "disabled"}.`);
+          },
+        },
+        {
+          icon: MapPin,
+          label: "Default Currency",
+          sublabel: defaultCurrency === "USD" ? "USD — US Dollar" : "PHP — Philippine Peso",
+          color: "#10B981",
+          onPress: () => setShowCurrencySelector(true),
+        },
+        {
+          icon: HelpCircle,
+          label: "Help & Support",
+          sublabel: "FAQs, contact us",
+          color: "#10B981",
+          onPress: () => setShowHelpSupport(true),
+        },
       ],
     },
   ];
+
+  const getInitials = (fullName: string) => {
+    return fullName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   return (
     <View style={styles.mainContainer}>
@@ -82,10 +225,11 @@ export function ProfileScreen() {
             {/* Avatar */}
             <View style={{ position: "relative" }}>
               <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitials}>CM</Text>
+                <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
               </View>
               <AnimatedButton
                 style={styles.cameraBtnWrapper}
+                onPress={() => Alert.alert("Camera", "Profile photo upload coming soon!")}
               >
                 <LinearGradient
                   colors={["#10B981", "#059669"]}
@@ -98,8 +242,8 @@ export function ProfileScreen() {
 
             {/* Info */}
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>Carlos Mendoza</Text>
-              <Text style={styles.profileEmail}>carlos.mendoza@email.com</Text>
+              <Text style={styles.profileName}>{name}</Text>
+              <Text style={styles.profileEmail}>{email}</Text>
               <View style={styles.badgeRow}>
                 <View style={styles.verifiedBadge}>
                   <CheckCircle size={10} color="#48bb78" style={{ marginRight: 3 }} />
@@ -151,6 +295,7 @@ export function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.addMethodBtnWrapper}
+              onPress={() => Alert.alert("Add Payment Method", "Connecting a new credit card or bank account coming soon!")}
             >
               <LinearGradient
                 colors={["#10B981", "#059669"]}
@@ -204,6 +349,7 @@ export function ProfileScreen() {
               </View>
               <AnimatedButton
                 style={styles.connectWalletBtnWrapper}
+                onPress={() => Alert.alert("Web3 Wallet", "Connecting to a Web3 wallet (like Metamask or Rainbow Wallet) coming soon!")}
               >
                 <LinearGradient
                   colors={["#10B981", "#059669"]}
@@ -226,31 +372,37 @@ export function ProfileScreen() {
                 const isLast = i === section.items.length - 1;
                 return (
                   <View key={item.label}>
-                    <View style={styles.settingItemRow}>
-                      <View style={styles.settingItemIconWrapper}>
-                        <Icon size={16} color="#10B981" />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.settingItemLabel}>{item.label}</Text>
-                        <Text style={styles.settingItemSub}>{item.sublabel}</Text>
-                      </View>
-
-                      {item.toggle ? (
-                        <Switch
-                          value={item.toggleVal}
-                          onValueChange={item.onToggle}
-                          trackColor={{ false: "#cbd5e1", true: "#10B981" }}
-                          thumbColor="#ffffff"
-                          ios_backgroundColor="#cbd5e1"
-                        />
-                      ) : item.badge ? (
-                        <View style={styles.smsBadge}>
-                          <Text style={styles.smsBadgeText}>{item.badge}</Text>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      disabled={item.toggle !== undefined}
+                      onPress={item.onPress}
+                    >
+                      <View style={styles.settingItemRow}>
+                        <View style={styles.settingItemIconWrapper}>
+                          <Icon size={16} color="#10B981" />
                         </View>
-                      ) : (
-                        <ChevronRight size={16} color="#b0b8c8" />
-                      )}
-                    </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.settingItemLabel}>{item.label}</Text>
+                          <Text style={styles.settingItemSub}>{item.sublabel}</Text>
+                        </View>
+
+                        {item.toggle ? (
+                          <Switch
+                            value={item.toggleVal}
+                            onValueChange={item.onToggle}
+                            trackColor={{ false: "#cbd5e1", true: "#10B981" }}
+                            thumbColor="#ffffff"
+                            ios_backgroundColor="#cbd5e1"
+                          />
+                        ) : item.badge ? (
+                          <View style={styles.smsBadge}>
+                            <Text style={styles.smsBadgeText}>{item.badge}</Text>
+                          </View>
+                        ) : (
+                          <ChevronRight size={16} color="#b0b8c8" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
                     {!isLast && <View style={styles.rowDivider} />}
                   </View>
                 );
@@ -260,7 +412,15 @@ export function ProfileScreen() {
         ))}
 
         {/* Sign Out Button */}
-        <AnimatedButton style={styles.signOutBtn}>
+        <AnimatedButton
+          style={styles.signOutBtn}
+          onPress={() => {
+            Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Sign Out", style: "destructive", onPress: () => Alert.alert("Success", "Signed out successfully!") }
+            ]);
+          }}
+        >
           <LogOut size={16} color="#ef4444" style={{ marginRight: 6 }} />
           <Text style={styles.signOutBtnText}>Sign Out</Text>
         </AnimatedButton>
@@ -268,6 +428,290 @@ export function ProfileScreen() {
         {/* App Version */}
         <Text style={styles.versionText}>v2.4.1 · Powered by AI</Text>
       </ScrollView>
+
+      {/* BottomSheets for Settings */}
+      <BottomSheet
+        isOpen={showPersonalInfo}
+        onClose={() => setShowPersonalInfo(false)}
+        title="Personal Information"
+      >
+        <View style={styles.modalForm}>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>FULL NAME</Text>
+            <TextInput
+              value={tempName}
+              onChangeText={setTempName}
+              style={styles.modalInput}
+              placeholder="Full Name"
+              placeholderTextColor="#9aa3b5"
+            />
+          </View>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>DELIVERY ADDRESS</Text>
+            <TextInput
+              value={tempAddress}
+              onChangeText={setTempAddress}
+              style={styles.modalInput}
+              placeholder="Address"
+              placeholderTextColor="#9aa3b5"
+            />
+          </View>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>DATE OF BIRTH (YYYY-MM-DD)</Text>
+            <TextInput
+              value={tempBirthday}
+              onChangeText={setTempBirthday}
+              style={styles.modalInput}
+              placeholder="Birthday"
+              placeholderTextColor="#9aa3b5"
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.modalSaveBtnWrapper}
+            onPress={() => {
+              if (!tempName.trim()) {
+                Alert.alert("Error", "Name cannot be empty.");
+                return;
+              }
+              setName(tempName);
+              setAddress(tempAddress);
+              setBirthday(tempBirthday);
+              setShowPersonalInfo(false);
+              Alert.alert("Success", "Personal Information updated successfully!");
+            }}
+          >
+            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+              <Text style={styles.modalSaveBtnText}>Save Changes</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={showPhone}
+        onClose={() => setShowPhone(false)}
+        title="Update Phone Number"
+      >
+        <View style={styles.modalForm}>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>NEW PHONE NUMBER</Text>
+            <TextInput
+              value={tempPhone}
+              onChangeText={setTempPhone}
+              style={styles.modalInput}
+              placeholder="+63 912 345 6789"
+              placeholderTextColor="#9aa3b5"
+              keyboardType="phone-pad"
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.modalSaveBtnWrapper}
+            onPress={() => {
+              if (!tempPhone.trim()) {
+                Alert.alert("Error", "Phone number cannot be empty.");
+                return;
+              }
+              setPhone(tempPhone);
+              setShowPhone(false);
+              Alert.alert("Success", "Phone number updated successfully!");
+            }}
+          >
+            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+              <Text style={styles.modalSaveBtnText}>Update Phone</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={showEmail}
+        onClose={() => setShowEmail(false)}
+        title="Update Email Address"
+      >
+        <View style={styles.modalForm}>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>NEW EMAIL ADDRESS</Text>
+            <TextInput
+              value={tempEmail}
+              onChangeText={setTempEmail}
+              style={styles.modalInput}
+              placeholder="carlos.mendoza@email.com"
+              placeholderTextColor="#9aa3b5"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.modalSaveBtnWrapper}
+            onPress={() => {
+              if (!tempEmail.trim() || !tempEmail.includes("@")) {
+                Alert.alert("Error", "Please enter a valid email address.");
+                return;
+              }
+              setEmail(tempEmail);
+              setShowEmail(false);
+              Alert.alert("Success", "Email address updated successfully!");
+            }}
+          >
+            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+              <Text style={styles.modalSaveBtnText}>Update Email</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={showPin}
+        onClose={() => {
+          setShowPin(false);
+          setCurrentPin("");
+          setNewPin("");
+          setConfirmPin("");
+          setPinError("");
+          setPinSuccess(false);
+        }}
+        title="Change Security PIN"
+      >
+        <View style={styles.modalForm}>
+          {pinSuccess ? (
+            <View style={{ alignItems: "center", paddingVertical: 20 }}>
+              <CheckCircle size={40} color="#10B981" style={{ marginBottom: 12 }} />
+              <Text style={{ fontSize: 15, fontWeight: "800", color: "#2d3748" }}>PIN Changed Successfully!</Text>
+              <Text style={{ fontSize: 11, color: "#9aa3b5", marginTop: 4, textAlign: "center" }}>Your security PIN is updated and active.</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalLabel}>CURRENT PIN</Text>
+                <TextInput
+                  value={currentPin}
+                  onChangeText={setCurrentPin}
+                  style={styles.modalInput}
+                  placeholder="••••"
+                  placeholderTextColor="#9aa3b5"
+                  keyboardType="numeric"
+                  secureTextEntry
+                  maxLength={4}
+                />
+              </View>
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalLabel}>NEW PIN</Text>
+                <TextInput
+                  value={newPin}
+                  onChangeText={setNewPin}
+                  style={styles.modalInput}
+                  placeholder="••••"
+                  placeholderTextColor="#9aa3b5"
+                  keyboardType="numeric"
+                  secureTextEntry
+                  maxLength={4}
+                />
+              </View>
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalLabel}>CONFIRM NEW PIN</Text>
+                <TextInput
+                  value={confirmPin}
+                  onChangeText={setConfirmPin}
+                  style={styles.modalInput}
+                  placeholder="••••"
+                  placeholderTextColor="#9aa3b5"
+                  keyboardType="numeric"
+                  secureTextEntry
+                  maxLength={4}
+                />
+              </View>
+              {pinError !== "" && (
+                <Text style={{ color: "#ef4444", fontSize: 11, fontWeight: "600", marginBottom: 10 }}>{pinError}</Text>
+              )}
+              <TouchableOpacity
+                style={styles.modalSaveBtnWrapper}
+                onPress={() => {
+                  if (currentPin.length < 4 || newPin.length < 4 || confirmPin.length < 4) {
+                    setPinError("PIN must be exactly 4 digits.");
+                    return;
+                  }
+                  if (newPin !== confirmPin) {
+                    setPinError("New PINs do not match.");
+                    return;
+                  }
+                  setPinError("");
+                  setPinSuccess(true);
+                  setTimeout(() => {
+                    setShowPin(false);
+                    setCurrentPin("");
+                    setNewPin("");
+                    setConfirmPin("");
+                    setPinSuccess(false);
+                    Alert.alert("Success", "Security PIN changed successfully!");
+                  }, 1500);
+                }}
+              >
+                <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+                  <Text style={styles.modalSaveBtnText}>Save New PIN</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={showCurrencySelector}
+        onClose={() => setShowCurrencySelector(false)}
+        title="Select Default Currency"
+      >
+        <View style={{ gap: 12, paddingBottom: 20 }}>
+          {[
+            { code: "USD", name: "USD — United States Dollar", flag: "🇺🇸" },
+            { code: "PHP", name: "PHP — Philippine Peso", flag: "🇵🇭" },
+          ].map((c) => {
+            const isSelected = defaultCurrency === c.code;
+            return (
+              <TouchableOpacity
+                key={c.code}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setDefaultCurrency(c.code as any);
+                  setShowCurrencySelector(false);
+                  Alert.alert("Success", `Default currency set to ${c.code}!`);
+                }}
+                style={[
+                  styles.currencySelectRow,
+                  isSelected && { borderColor: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.04)" }
+                ]}
+              >
+                <Text style={{ fontSize: 24, marginRight: 12 }}>{c.flag}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#2d3748" }}>{c.name}</Text>
+                </View>
+                {isSelected && <CheckCircle size={18} color="#10B981" />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={showHelpSupport}
+        onClose={() => setShowHelpSupport(false)}
+        title="Help & Support"
+      >
+        <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+          <View style={{ gap: 14, paddingBottom: 20 }}>
+            {[
+              { q: "How fast are Reblocks transfers?", a: "Reblocks utilizes high-speed Web3 networks (Morph L2) to execute payments. Almost all international transfers settle in your recipient's bank account or mobile wallet instantly!" },
+              { q: "What are the transfer fees?", a: "We believe in clear and cheap remittance. Sending money to any supported Southeast Asian country costs a flat fee of just $0.30 (or ₱15.00) with zero hidden markup on the exchange rates." },
+              { q: "Which funding sources are supported?", a: "You can securely connect any standard bank account (like BPI, DBS) or standard Visa/Mastercard debit and credit cards for instant deposits." },
+              { q: "Is KYC verification mandatory?", a: "Yes, to ensure complete compliance with local financial regulations and prevent identity theft, we require a simple one-time identity verification." }
+            ].map((faq, i) => (
+              <View key={i} style={styles.faqItem}>
+                <Text style={styles.faqQuestion}>Q: {faq.q}</Text>
+                <Text style={styles.faqAnswer}>{faq.a}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </BottomSheet>
     </View>
   );
 }
@@ -367,17 +811,6 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     color: "#48bb78",
-    fontSize: 8,
-    fontWeight: "800",
-  },
-  premiumBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    backgroundColor: "#d1fae5",
-  },
-  premiumText: {
-    color: "#10B981",
     fontSize: 8,
     fontWeight: "800",
   },
@@ -610,5 +1043,80 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#cbd5e1",
     fontWeight: "600",
+  },
+
+  // Modal styles
+  modalForm: {
+    gap: 16,
+    paddingBottom: 20,
+  },
+  modalInputGroup: {
+    gap: 6,
+  },
+  modalLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#9aa3b5",
+    letterSpacing: 0.8,
+    marginLeft: 4,
+  },
+  modalInput: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 13,
+    color: "#2d3748",
+    fontWeight: "600",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  modalSaveBtnWrapper: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 10,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  modalSaveBtn: {
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSaveBtnText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  currencySelectRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  faqItem: {
+    backgroundColor: "#f8fafc",
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    gap: 6,
+  },
+  faqQuestion: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#2d3748",
+  },
+  faqAnswer: {
+    fontSize: 11,
+    color: "#718096",
+    lineHeight: 16,
+    fontWeight: "500",
   },
 });

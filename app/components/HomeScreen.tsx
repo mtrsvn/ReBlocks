@@ -36,13 +36,26 @@ import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 
 const COUNTRIES = [
-  { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42 },
-  { name: "Singapore", flag: "🇸🇬", currency: "SGD", pair: "USD/SGD", rate: 1.342 },
-  { name: "Thailand", flag: "🇹🇭", currency: "THB", pair: "USD/THB", rate: 34.65 },
-  { name: "Vietnam", flag: "🇻🇳", currency: "VND", pair: "USD/VND", rate: 25450 },
-  { name: "Malaysia", flag: "🇲🇾", currency: "MYR", pair: "USD/MYR", rate: 4.18 },
-  { name: "Indonesia", flag: "🇮🇩", currency: "IDR", pair: "USD/IDR", rate: 16120 },
+  { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
+  { name: "Singapore", flag: "🇸🇬", currency: "SGD", pair: "USD/SGD", rate: 1.342, symbol: "S$" },
+  { name: "Thailand", flag: "🇹🇭", currency: "THB", pair: "USD/THB", rate: 34.65, symbol: "฿" },
+  { name: "Vietnam", flag: "🇻🇳", currency: "VND", pair: "USD/VND", rate: 25450, symbol: "₫" },
+  { name: "Malaysia", flag: "🇲🇾", currency: "MYR", pair: "USD/MYR", rate: 4.18, symbol: "RM" },
+  { name: "Indonesia", flag: "🇮🇩", currency: "IDR", pair: "USD/IDR", rate: 16120, symbol: "Rp" },
 ];
+
+const formatFXRate = (rate: number) => {
+  if (rate >= 1000) {
+    return rate.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+  if (rate >= 100) {
+    return rate.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  }
+  if (rate < 1) {
+    return rate.toFixed(4);
+  }
+  return rate.toFixed(2);
+};
 
 interface HomeScreenProps {
   onSendMoney: () => void;
@@ -56,13 +69,31 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     activeFundingSourceId,
     setActiveFundingSourceId,
     transactions,
+    defaultCurrency,
+    exchangeRates,
   } = useApp();
+
+  const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
+
+  const formatAmount = (amt: number, txCurrency?: string) => {
+    const targetCurrency = txCurrency || "PHP";
+    if (targetCurrency === defaultCurrency) {
+      return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (targetCurrency === "PHP" && defaultCurrency === "USD") {
+      return (amt * 0.018).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (targetCurrency === "USD" && defaultCurrency === "PHP") {
+      return (amt / 0.018).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const notifications = [
     {
       id: "n1",
       title: "Transfer Completed",
-      body: "Your transfer of ₱1,500 to Maria Mendoza was completed successfully.",
+      body: `Your transfer of ${curSymbol}${defaultCurrency === "USD" ? "27.00" : "1,500"} to Maria Mendoza was completed successfully.`,
       time: "2 hours ago",
       icon: CheckCircle,
       color: "#48bb78",
@@ -98,13 +129,22 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
 
   const unreadCount = notifications.filter((n) => !readIds.includes(n.id)).length;
 
-  // Curate live rates dynamically
-  const allRates = COUNTRIES;
+  // Curate live rates dynamically using real fetched values from exchangeRates context!
+  const allRates = COUNTRIES.map((c) => {
+    const usdRate = exchangeRates["USD"] || 0.018;
+    const curRate = exchangeRates[c.currency] || 1;
+    // 1 USD in terms of target currency is curRate / usdRate!
+    const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
+    return {
+      ...c,
+      rate: realRate,
+    };
+  });
 
-  const handleShare = async (tx: Transaction) => {
+  const handleShare = async (tx: any) => {
     try {
       await Share.share({
-        message: `Remittance details: Sent ₱${tx.amount.toLocaleString()} to ${tx.recipientName}. Ref ID: ${tx.id}`,
+        message: `Remittance details: Sent ${curSymbol}${formatAmount(tx.amount, tx.currency)} to ${tx.recipientName}. Ref ID: ${tx.id}`,
       });
     } catch (error) {
       console.log(error);
@@ -228,8 +268,12 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               <View key={i} style={styles.flagItem}>
                 <Text style={styles.flagEmoji}>{r.flag}</Text>
                 <Text style={styles.pairText}>{r.pair}</Text>
-                <Text style={styles.rateText}>
-                  ₱{r.rate.toFixed(r.rate < 1 ? 4 : 2)}
+                <Text
+                  style={styles.rateText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {r.symbol}{formatFXRate(r.rate)}
                 </Text>
               </View>
             ))}
@@ -299,7 +343,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 </View>
                 <View style={{ alignItems: "flex-end", gap: 3 }}>
                   <Text style={styles.txAmt}>
-                    ₱{tx.amount.toLocaleString()}
+                    {curSymbol}{formatAmount(tx.amount, tx.currency)}
                   </Text>
                   <View style={styles.completedBadge}>
                     <Text style={styles.completedText}>COMPLETED</Text>
@@ -372,8 +416,12 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             <View key={i} style={styles.sheetFXItem}>
               <Text style={styles.sheetFXEmoji}>{r.flag}</Text>
               <Text style={styles.sheetFXPair}>{r.pair}</Text>
-              <Text style={styles.sheetFXRate}>
-                ₱{r.rate.toFixed(r.rate < 1 ? 4 : 2)}
+              <Text
+                style={styles.sheetFXRate}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {r.symbol}{formatFXRate(r.rate)}
               </Text>
             </View>
           ))}
@@ -410,7 +458,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>AMOUNT SENT</Text>
                 <Text style={styles.detailValBold}>
-                  ₱{selectedTransaction.amount.toLocaleString()}
+                  {curSymbol}{formatAmount(selectedTransaction.amount, selectedTransaction.currency)}
                 </Text>
               </View>
 
@@ -428,7 +476,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>EXCHANGE RATE</Text>
                   <Text style={styles.detailVal}>
-                    ₱{selectedTransaction.exchangeRate.toFixed(2)}
+                    1 {selectedTransaction.currency || "PHP"} = {selectedTransaction.recipientCurrency === selectedTransaction.currency ? "1.00" : (selectedTransaction.recipientCurrency === "PHP" ? (1 / (selectedTransaction.exchangeRate || 1)) : (selectedTransaction.exchangeRate || 1)).toFixed(2)} {selectedTransaction.recipientCurrency}
                   </Text>
                 </View>
               )}
@@ -436,7 +484,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>FEE</Text>
                 <Text style={styles.detailVal}>
-                  ₱{selectedTransaction.fee.toLocaleString()}
+                  {curSymbol}{formatAmount(selectedTransaction.fee, selectedTransaction.currency)}
                 </Text>
               </View>
 
@@ -671,7 +719,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8fafc",
     alignItems: "center",
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     borderRadius: 12,
     marginHorizontal: 3,
     borderWidth: 1,
@@ -867,6 +916,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     alignItems: "center",
     paddingVertical: 14,
+    paddingHorizontal: 8,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#e2e8f0",

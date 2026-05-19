@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface FundingSource {
   id: string;
@@ -44,6 +44,8 @@ interface AppContextType {
   transactions: Transaction[];
   exchangeRates: { [key: string]: number };
   activeFundingSourceId: string;
+  defaultCurrency: 'USD' | 'PHP';
+  setDefaultCurrency: (cur: 'USD' | 'PHP') => void;
   setActiveFundingSourceId: (id: string) => void;
   addRecipient: (recipient: Omit<Recipient, 'id'>) => void;
   updateRecipient: (id: string, recipient: Partial<Recipient>) => void;
@@ -54,6 +56,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [defaultCurrency, setDefaultCurrency] = useState<'USD' | 'PHP'>('USD');
   const [fundingSources] = useState<FundingSource[]>([
     { id: 'fs1', name: 'Main Savings', type: 'bank', last4: '8842', accountNumber: '0012 3456 7890 8842', provider: 'BPI', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
     { id: 'fs2', name: 'Travel Card', type: 'card', last4: '1099', accountNumber: '4532 7890 1234 1099', provider: 'Visa', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
@@ -72,7 +75,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     { id: 'tx5', type: 'send', amount: 3348, currency: 'PHP', recipientName: 'Siti Rahman', date: new Date(Date.now() - 604800000).toISOString(), status: 'completed', fee: 15, fundingSourceId: 'fs1', recipientAmount: 80, recipientCurrency: 'SGD', exchangeRate: 0.024 },
   ]);
 
-  const exchangeRates = {
+  const [exchangeRates, setExchangeRates] = useState<{ [key: string]: number }>({
     'PHP': 1,
     'SGD': 0.024,
     'THB': 0.56,
@@ -80,7 +83,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     'MYR': 0.12,
     'IDR': 0.0036,
     'USD': 0.018
-  };
+  });
+
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const res = await fetch("https://open.er-api.com/v6/latest/USD");
+        const data = await res.json();
+        if (data && data.result === "success" && data.rates) {
+          const apiRates = data.rates;
+          const phpRate = apiRates['PHP'] || 58.42;
+          
+          setExchangeRates({
+            'PHP': 1,
+            'SGD': (apiRates['SGD'] || 1.34) / phpRate,
+            'THB': (apiRates['THB'] || 34.65) / phpRate,
+            'VND': (apiRates['VND'] || 25450) / phpRate,
+            'MYR': (apiRates['MYR'] || 4.18) / phpRate,
+            'IDR': (apiRates['IDR'] || 16120) / phpRate,
+            'USD': 1 / phpRate,
+          });
+        }
+      } catch (err) {
+        console.log("Failed to fetch live exchange rates: ", err);
+      }
+    };
+
+    fetchRates();
+    
+    // Polling rate fetcher every 30 seconds for real-time live rates
+    const interval = setInterval(fetchRates, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const addRecipient = (recipient: Omit<Recipient, 'id'>) => {
     const newRecipient = { ...recipient, id: Math.random().toString(36).substr(2, 9) };
@@ -106,7 +140,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ fundingSources, recipients, transactions, exchangeRates, activeFundingSourceId, setActiveFundingSourceId, addRecipient, updateRecipient, deleteRecipient, addTransaction }}>
+    <AppContext.Provider value={{ fundingSources, recipients, transactions, exchangeRates, activeFundingSourceId, setActiveFundingSourceId, defaultCurrency, setDefaultCurrency, addRecipient, updateRecipient, deleteRecipient, addTransaction }}>
       {children}
     </AppContext.Provider>
   );

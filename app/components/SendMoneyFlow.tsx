@@ -56,6 +56,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
     exchangeRates,
     addTransaction,
     activeFundingSourceId,
+    defaultCurrency,
   } = useApp();
 
   const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];
@@ -76,13 +77,18 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
   // Amount State
   const [sendAmount, setSendAmount] = useState("");
-  const [sendCurrency, setSendCurrency] = useState(preselectedRecipient ? preselectedRecipient.currency : "USD");
+  const [sendCurrency, setSendCurrency] = useState(preselectedRecipient ? preselectedRecipient.currency : (defaultCurrency === "USD" ? "USD" : "PHP"));
+
+  const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
+  const baseFee = defaultCurrency === "USD" ? 0.30 : 15;
 
   const exchangeRate = exchangeRates[sendCurrency] || 1;
   const receiveAmount = parseFloat(sendAmount) || 0;
-  const phpEquivalent = sendCurrency === "PHP" ? receiveAmount : receiveAmount / exchangeRate;
-  const fee = 15;
-  const totalToPay = phpEquivalent + fee;
+
+  // Calculate equivalent in the selected default currency
+  const phpValue = sendCurrency === "PHP" ? receiveAmount : receiveAmount / exchangeRate;
+  const baseEquivalent = defaultCurrency === "USD" ? phpValue * 0.018 : phpValue;
+  const totalToPay = baseEquivalent + baseFee;
 
   const handleNext = () => setStep((prev) => prev + 1);
   const handleBack = () => {
@@ -124,12 +130,12 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
     addTransaction({
       type: "send",
       amount: totalToPay,
-      currency: "PHP",
+      currency: defaultCurrency,
       recipientAmount: receiveAmount,
       recipientCurrency: sendCurrency,
       recipientName: recipient.name,
-      fee: fee,
-      exchangeRate: exchangeRate,
+      fee: baseFee,
+      exchangeRate: sendCurrency === defaultCurrency ? 1 : ((1 / exchangeRate) * (defaultCurrency === "USD" ? 0.018 : 1)),
       fundingSourceId: primarySource.id,
       estimatedArrival: "Instant",
     });
@@ -141,7 +147,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
       await Share.share({
         message: `Remittance details: Sent ${sendCurrency} ${receiveAmount.toLocaleString()} to ${
           selectedRecipient?.name || newName
-        }. Fee: ₱15.00. Sent via Reblocks.`,
+        }. Fee: ${curSymbol}${baseFee.toFixed(2)}. Sent via Reblocks.`,
       });
     } catch (error) {
       console.log(error);
@@ -425,7 +431,10 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                 </View>
                 <Text style={styles.calcVal}>
                   1 {sendCurrency} ={" "}
-                  {sendCurrency === "PHP" ? "1.00" : (1 / exchangeRate).toFixed(2)} PHP
+                  {sendCurrency === defaultCurrency
+                    ? "1.00"
+                    : ((1 / exchangeRate) * (defaultCurrency === "USD" ? 0.018 : 1)).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
+                  {defaultCurrency}
                 </Text>
               </View>
 
@@ -434,7 +443,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   <Info size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
                   <Text style={styles.calcLabel}>Transfer Fee</Text>
                 </View>
-                <Text style={styles.calcVal}>₱15.00</Text>
+                <Text style={styles.calcVal}>{curSymbol}{baseFee.toFixed(2)}</Text>
               </View>
 
               <View style={styles.calcRow}>
@@ -450,7 +459,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
                 <Text style={styles.calcTotalLabel}>Total to Pay</Text>
                 <Text style={styles.calcTotalVal}>
-                  ₱{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </Text>
               </View>
             </View>
@@ -503,8 +512,8 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               <View style={styles.reviewFlowRow}>
                 <View style={styles.reviewCol}>
                   <Text style={styles.reviewCap}>PAYING</Text>
-                  <Text style={styles.reviewAmt}>₱{totalToPay.toLocaleString()}</Text>
-                  <Text style={styles.reviewSub}>PHP</Text>
+                  <Text style={styles.reviewAmt}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+                  <Text style={styles.reviewSub}>{defaultCurrency}</Text>
                 </View>
 
                 <View style={styles.flowArrowCircle}>
@@ -536,13 +545,16 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
                   <Text style={styles.calcValBold}>
                     1 {sendCurrency} ={" "}
-                    {sendCurrency === "PHP" ? "1.00" : (1 / exchangeRate).toFixed(2)} PHP
+                    {sendCurrency === defaultCurrency
+                      ? "1.00"
+                      : ((1 / exchangeRate) * (defaultCurrency === "USD" ? 0.018 : 1)).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
+                    {defaultCurrency}
                   </Text>
                 </View>
 
                 <View style={[styles.calcRow, { borderBottomWidth: 0 }]}>
                   <Text style={styles.calcLabel}>Fee</Text>
-                  <Text style={styles.calcValBold}>₱15.00</Text>
+                  <Text style={styles.calcValBold}>{curSymbol}{baseFee.toFixed(2)}</Text>
                 </View>
               </View>
             </View>
@@ -592,7 +604,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
               <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
                 <Text style={styles.calcLabel}>Total Paid</Text>
-                <Text style={styles.calcValBold}>₱{totalToPay.toLocaleString()}</Text>
+                  <Text style={styles.calcValBold}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
               </View>
             </View>
 
