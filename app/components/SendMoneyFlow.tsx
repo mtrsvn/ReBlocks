@@ -217,12 +217,6 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   <QrCode size={100} color="rgba(255,255,255,0.2)" />
                 </View>
                 <Text style={styles.qrScannerText}>Align QR code inside container</Text>
-                <AnimatedButton
-                  onPress={() => setShowQRScanner(false)}
-                  style={styles.qrCancelBtn}
-                >
-                  <Text style={styles.qrCancelText}>Cancel Scan</Text>
-                </AnimatedButton>
               </View>
             ) : !isAddingNew ? (
               <>
