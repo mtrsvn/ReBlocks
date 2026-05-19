@@ -10,6 +10,7 @@ import {
   Platform,
   SafeAreaView,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import {
   ArrowLeft,
@@ -490,6 +491,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+
   const autoScroll = () => {
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
@@ -676,6 +678,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
       style={styles.keyboardContainer}
     >
       <View style={styles.mainContainer}>
+
         {/* Header */}
         <View style={styles.header}>
           <AnimatedButton
@@ -741,6 +744,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
               ))}
             </ScrollView>
           )}
+
         </ScrollView>
 
         {/* Input Bar */}

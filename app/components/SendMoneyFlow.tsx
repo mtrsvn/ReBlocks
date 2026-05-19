@@ -586,7 +586,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               Funds are being delivered to {selectedRecipient?.name || newName}
             </Text>
 
-            {/* Summary details panel */}
+            {/* Unified Ultra-Premium Web3 Receipt Panel */}
             <View style={styles.calcInsetCard}>
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Transaction ID</Text>
@@ -602,9 +602,43 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                 </Text>
               </View>
 
-              <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+              <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Total Paid</Text>
-                  <Text style={styles.calcValBold}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+                <Text style={styles.calcValBold}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+              </View>
+
+              <View style={styles.calcDivider} />
+
+              <View style={styles.calcHeaderRow}>
+                <Zap size={13} color="#10B981" />
+                <Text style={styles.calcWeb3Header}>MORPH L2 BLOCKCHAIN RECORD</Text>
+              </View>
+
+              <View style={styles.calcRow}>
+                <Text style={styles.calcLabel}>Network</Text>
+                <Text style={styles.calcValBold}>Morph L2 Blockchain</Text>
+              </View>
+
+              <View style={styles.calcRow}>
+                <Text style={styles.calcLabel}>Tx Hash</Text>
+                <Text style={styles.calcHash}>0x5f9a...8d2e</Text>
+              </View>
+
+              <View style={styles.calcRow}>
+                <Text style={styles.calcLabel}>L2 Gas Saved</Text>
+                <Text style={[styles.calcValBold, { color: "#10B981" }]}>0.00018 ETH ($0.58 Saved)</Text>
+              </View>
+
+              <View style={styles.calcRow}>
+                <Text style={styles.calcLabel}>Smart Contract</Text>
+                <Text style={styles.calcValBold}>0xReBlocksRemitL2</Text>
+              </View>
+
+              <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                <Text style={styles.calcLabel}>L2 Status</Text>
+                <View style={styles.successStatusBadge}>
+                  <Text style={styles.successStatusText}>FINALIZED (1.2s)</Text>
+                </View>
               </View>
             </View>
 
@@ -952,6 +986,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
+    width: "100%",
   },
   calcRow: {
     flexDirection: "row",
@@ -1116,5 +1151,37 @@ const styles = StyleSheet.create({
     color: "#10B981",
     fontSize: 13,
     fontWeight: "800",
+  },
+  calcWeb3Header: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: "#10B981",
+    letterSpacing: 0.8,
+  },
+  calcHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  calcHash: {
+    fontSize: 12,
+    color: "#2d3748",
+    fontWeight: "700",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  successStatusBadge: {
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.15)",
+  },
+  successStatusText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#10B981",
   },
 });

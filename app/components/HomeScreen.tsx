@@ -10,6 +10,7 @@ import {
   Platform,
   Share,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import {
   Send,
@@ -124,6 +125,26 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   const [showRatesDetail, setShowRatesDetail] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [readIds, setReadIds] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetch("https://open.er-api.com/v6/latest/USD");
+    } catch (e) {
+      console.log(e);
+    }
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
+
+  const handleScroll = (event: any) => {
+    const { contentOffset } = event.nativeEvent;
+    if (contentOffset.y <= -55 && !refreshing) {
+      onRefresh();
+    }
+  };
 
   const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];
 
@@ -153,10 +174,19 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
 
   return (
     <View style={styles.mainContainer}>
+       {refreshing && (
+        <View style={styles.topRefreshContainer}>
+          <ActivityIndicator size="small" color="#10B981" />
+        </View>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        alwaysBounceVertical={true}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -180,11 +210,11 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         {/* Funding Source Card with 3D-Gradient */}
         <View style={styles.sourceCardContainer}>
           <AnimatedButton
-            onPress={() => setShowAccountSelector(!showAccountSelector)}
+            onPress={() => setShowAccountSelector(true)}
             style={styles.primaryCardWrapper}
           >
             <LinearGradient
-              colors={primarySource.id === "fs1" ? ["#10B981", "#059669"] : ["#059669", "#047857"]}
+              colors={["#10B981", "#059669"]}
               style={styles.primaryCard}
             >
               <View style={styles.cardHeader}>
@@ -195,9 +225,6 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                     <ChevronDown
                       size={16}
                       color="#ffffff"
-                      style={{
-                        transform: [{ rotate: showAccountSelector ? "180deg" : "0deg" }],
-                      }}
                     />
                   </View>
                   <Text style={styles.cardProvider}>
@@ -217,38 +244,6 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               </View>
             </LinearGradient>
           </AnimatedButton>
-
-          {/* Account Selector Dropdown */}
-          {showAccountSelector && (
-            <View style={styles.dropdownContainer}>
-              {fundingSources.map((source) => {
-                const isActive = source.id === activeFundingSourceId;
-                const Icon = source.type === "bank" ? Building2 : CreditCard;
-                return (
-                  <TouchableOpacity
-                    key={source.id}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setActiveFundingSourceId(source.id);
-                      setShowAccountSelector(false);
-                    }}
-                    style={[styles.dropdownRow, isActive && styles.dropdownRowActive]}
-                  >
-                    <View style={styles.dropdownIconWrapper}>
-                      <Icon size={16} color="#10B981" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.dropdownName}>{source.name}</Text>
-                      <Text style={styles.dropdownSub}>
-                        {source.provider} · •••• {source.last4}
-                      </Text>
-                    </View>
-                    {isActive && <CheckCircle size={16} color="#10B981" />}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
         </View>
 
         {/* Live Exchange Rates Preview */}
@@ -425,6 +420,45 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               </Text>
             </View>
           ))}
+        </View>
+      </BottomSheet>
+
+      {/* Funding Source BottomSheet */}
+      <BottomSheet
+        isOpen={showAccountSelector}
+        onClose={() => setShowAccountSelector(false)}
+        title="Select Funding Source"
+      >
+        <View style={{ gap: 12, paddingBottom: 16 }}>
+          {fundingSources.map((source) => {
+            const isActive = source.id === activeFundingSourceId;
+            const Icon = source.type === "bank" ? Building2 : CreditCard;
+            return (
+              <TouchableOpacity
+                key={source.id}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setActiveFundingSourceId(source.id);
+                  setShowAccountSelector(false);
+                }}
+                style={[
+                  styles.popupDropdownRow,
+                  isActive && styles.popupDropdownRowActive
+                ]}
+              >
+                <View style={styles.popupDropdownIconWrapper}>
+                  <Icon size={18} color="#10B981" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.popupDropdownName}>{source.name}</Text>
+                  <Text style={styles.popupDropdownSub}>
+                    {source.provider} · •••• {source.last4}
+                  </Text>
+                </View>
+                {isActive && <CheckCircle size={18} color="#10B981" />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </BottomSheet>
 
@@ -639,45 +673,38 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     marginTop: 4,
   },
-  dropdownContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 8,
-    marginTop: 8,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  dropdownRow: {
+  popupDropdownRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 12,
-    marginVertical: 2,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
     gap: 12,
   },
-  dropdownRowActive: {
-    backgroundColor: "rgba(16, 185, 129, 0.08)",
+  popupDropdownRowActive: {
+    borderColor: "#10B981",
+    backgroundColor: "rgba(16, 185, 129, 0.04)",
   },
-  dropdownIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "rgba(16, 185, 129, 0.1)",
+  popupDropdownIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
     alignItems: "center",
     justifyContent: "center",
   },
-  dropdownName: {
-    color: "#2d3748",
+  popupDropdownName: {
     fontSize: 13,
     fontWeight: "700",
+    color: "#2d3748",
   },
-  dropdownSub: {
-    color: "#9aa3b5",
+  popupDropdownSub: {
     fontSize: 11,
-    marginTop: 1,
+    color: "#718096",
+    fontWeight: "600",
+    marginTop: 2,
   },
   flatCard: {
     backgroundColor: "#ffffff",
@@ -1037,5 +1064,22 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 13,
     fontWeight: "700",
+  },
+  topRefreshContainer: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 20,
+    alignSelf: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+    zIndex: 999,
   },
 });

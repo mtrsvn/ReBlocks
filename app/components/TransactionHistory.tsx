@@ -8,6 +8,7 @@ import {
   TextInput,
   Share,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import {
   Search,
@@ -52,6 +53,22 @@ export function TransactionHistory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
+
+  const handleScroll = (event: any) => {
+    const { contentOffset } = event.nativeEvent;
+    if (contentOffset.y <= -55 && !refreshing) {
+      onRefresh();
+    }
+  };
+
   const filtered = transactions.filter(
     (tx) =>
       tx.recipientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -70,10 +87,19 @@ export function TransactionHistory() {
 
   return (
     <View style={styles.mainContainer}>
+      {refreshing && (
+        <View style={styles.topRefreshContainer}>
+          <ActivityIndicator size="small" color="#10B981" />
+        </View>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        alwaysBounceVertical={true}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -440,5 +466,22 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 13,
     fontWeight: "700",
+  },
+  topRefreshContainer: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 50 : 20,
+    alignSelf: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+    zIndex: 999,
   },
 });
