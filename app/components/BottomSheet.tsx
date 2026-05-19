@@ -27,7 +27,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
 
   useEffect(() => {
     if (isOpen) {
-      // Animate slide up and fade in backdrop
+      
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -42,14 +42,14 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
         }),
       ]).start();
     } else {
-      // Reset values
+      
       slideAnim.setValue(SCREEN_HEIGHT);
       fadeAnim.setValue(0);
     }
   }, [isOpen]);
 
   const handleDismiss = () => {
-    // Slide panel down quickly, then close
+    
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
@@ -75,7 +75,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
       animationType="none"
     >
       <View style={styles.modalContainer}>
-        {/* Backdrop overlay */}
+        
         <Animated.View
           style={[
             styles.backdrop,
@@ -89,19 +89,19 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
           />
         </Animated.View>
 
-        {/* Slidable Card */}
+        
         <Animated.View
           style={[
             styles.sheetCard,
             { transform: [{ translateY: slideAnim }] }
           ]}
         >
-          {/* Bezel indicator */}
+          
           <View style={styles.indicatorContainer}>
             <View style={styles.indicator} />
           </View>
 
-          {/* Header */}
+          
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>{title}</Text>
             <TouchableOpacity
@@ -113,7 +113,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
             </TouchableOpacity>
           </View>
 
-          {/* Scrollable contents */}
+          
           <ScrollView
             style={styles.sheetScroll}
             contentContainerStyle={styles.sheetContent}

@@ -161,11 +161,11 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
 
   const unreadCount = notifications.filter((n) => !readIds.includes(n.id)).length;
 
-  // Curate live rates dynamically using real fetched values from exchangeRates context!
+  
   const allRates = COUNTRIES.map((c) => {
     const usdRate = exchangeRates["USD"] || 0.018;
     const curRate = exchangeRates[c.currency] || 1;
-    // 1 USD in terms of target currency is curRate / usdRate!
+    
     const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
     return {
       ...c,
@@ -199,7 +199,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         scrollEventThrottle={16}
         alwaysBounceVertical={true}
       >
-        {/* Header */}
+        
         <View style={styles.header}>
           <View>
             <Text style={styles.headerWelcome}>WELCOME BACK</Text>
@@ -218,7 +218,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           </AnimatedButton>
         </View>
 
-        {/* Funding Source Card with 3D-Gradient */}
+        
         <View style={styles.sourceCardContainer}>
           <AnimatedButton
             onPress={() => setShowAccountSelector(true)}
@@ -257,7 +257,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           </AnimatedButton>
         </View>
 
-        {/* Live Exchange Rates Preview */}
+        
         <AnimatedButton
           onPress={() => setShowRatesDetail(true)}
           style={styles.flatCard}
@@ -286,7 +286,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           </View>
         </AnimatedButton>
 
-        {/* Quick Actions */}
+        
         <View style={styles.actionGrid}>
           {[
             {
@@ -318,7 +318,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           ))}
         </View>
 
-        {/* Recent Transfers */}
+        
         <View style={{ marginTop: 8 }}>
           <View style={styles.sectionHeader}>
             <Text style={styles.recentTitle}>Recent Transfers</Text>
@@ -360,7 +360,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </View>
       </ScrollView>
 
-      {/* Notifications Slide-Over Panel */}
+      
       <Modal
         visible={showNotifications}
         animationType="slide"
@@ -424,7 +424,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </SafeAreaView>
       </Modal>
 
-      {/* Exchange Rates Detail BottomSheet */}
+      
       <BottomSheet
         isOpen={showRatesDetail}
         onClose={() => setShowRatesDetail(false)}
@@ -447,7 +447,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </View>
       </BottomSheet>
 
-      {/* Funding Source BottomSheet */}
+      
       <BottomSheet
         isOpen={showAccountSelector}
         onClose={() => setShowAccountSelector(false)}
@@ -486,7 +486,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </View>
       </BottomSheet>
 
-      {/* Transaction Details BottomSheet */}
+      
       <BottomSheet
         isOpen={!!selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: "700",
   },
-  // Notifications modal overlay
+  
   notifModalContainer: {
     flex: 1,
     backgroundColor: "#f8fafc",
@@ -956,7 +956,7 @@ const styles = StyleSheet.create({
     color: "#b0b8c8",
     marginTop: 5,
   },
-  // Sheet FX
+  
   sheetFXGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -987,7 +987,7 @@ const styles = StyleSheet.create({
     color: "#2d3748",
     marginTop: 2,
   },
-  // Detail sheet card
+  
   detailCard: {
     backgroundColor: "#ffffff",
     borderRadius: 16,

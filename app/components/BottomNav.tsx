@@ -26,17 +26,17 @@ const navItems: { id: Screen; label: string; icon: React.ElementType }[] = [
 ];
 
 const { width: screenWidth } = Dimensions.get("window");
-const CONTAINER_WIDTH = screenWidth - 36; // left: 18, right: 18
-const INNER_WIDTH = CONTAINER_WIDTH - 20; // paddingHorizontal: 10 * 2
+const CONTAINER_WIDTH = screenWidth - 36; 
+const INNER_WIDTH = CONTAINER_WIDTH - 20; 
 const TAB_WIDTH = INNER_WIDTH / 4;
 
 export function BottomNav({ active, onNavigate }: BottomNavProps) {
   const activeIndex = navItems.findIndex((item) => item.id === active);
   
-  // Track active slide index
+  
   const slideAnim = useRef(new Animated.Value(activeIndex !== -1 ? activeIndex : 0)).current;
 
-  // Elastic spring scale animation arrays for each tab
+  
   const scaleAnims = useRef(navItems.map(() => new Animated.Value(1))).current;
 
   useEffect(() => {
@@ -52,10 +52,10 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
   }, [active]);
 
   const handlePress = (id: Screen, index: number) => {
-    // Play light, satisfying selection haptic
+    
     Haptics.selectionAsync();
 
-    // Trigger tab scale shrink and bounce back animation
+    
     Animated.sequence([
       Animated.timing(scaleAnims[index], {
         toValue: 0.86,
@@ -73,7 +73,7 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
     onNavigate(id);
   };
 
-  // Interpolate slide position to transform translateX
+  
   const translateX = slideAnim.interpolate({
     inputRange: [0, 1, 2, 3],
     outputRange: [0, TAB_WIDTH, 2 * TAB_WIDTH, 3 * TAB_WIDTH],
@@ -81,7 +81,7 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
 
   return (
     <View style={styles.navContainer}>
-      {/* Sliding Active Indicator Bubble behind the icons */}
+      
       <Animated.View
         style={[
           styles.activeIndicator,

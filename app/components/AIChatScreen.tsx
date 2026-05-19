@@ -25,7 +25,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedButton } from "./AnimatedButton";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+
 
 interface TxnData {
   recipient: string;
@@ -75,7 +75,7 @@ interface AIWeb3ConfirmMsg {
 
 type ChatMessage = UserMsg | AITextMsg | AIConfirmMsg | AIWeb3ConfirmMsg;
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+
 
 const CONTACTS: Record<string, Pick<TxnData, "recipient" | "username" | "flag" | "country">> = {
   maria: { recipient: "Maria Mendoza", username: "@mariamendoza", flag: "🇵🇭", country: "PH" },
@@ -98,7 +98,7 @@ const CHIPS = [
   "Recent TxHash",
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -140,12 +140,12 @@ type Intent =
 function parseIntent(text: string): Intent {
   const lower = text.toLowerCase().trim();
 
-  // Web3-specific commands
+  
   if (/(?:check|show|get|what'?s?).*gas.*fee/i.test(lower)) return { type: "gas_fee" };
   if (/usdc.*balance|balance.*usdc/i.test(lower)) return { type: "usdc_balance" };
   if (/(?:recent|last|show).*(?:txhash|tx hash|transaction hash)/i.test(lower)) return { type: "recent_txhash" };
 
-  // Web3 send pattern
+  
   const web3SendRe = /(?:send|transfer)\s+(\d[\d,._]*)\s*usdc\s+(?:to\s+)?(0x[a-fA-F0-9]{40}|.+)/i;
   const w3m = text.match(web3SendRe);
   if (w3m) {
@@ -175,7 +175,7 @@ function parseIntent(text: string): Intent {
   return { type: "help" };
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+
 
 function FormattedText({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -218,7 +218,7 @@ function ConfirmationCard({
         </View>
 
         <View style={styles.cardContent}>
-          {/* Recipient info */}
+          
           <View style={styles.recipientRow}>
             <View style={styles.flagBadge}>
               <Text style={{ fontSize: 20 }}>{txn.flag}</Text>
@@ -231,7 +231,7 @@ function ConfirmationCard({
             </View>
           </View>
 
-          {/* Amount Inset Box */}
+          
           <View style={styles.amountInset}>
             <Text style={styles.amountInsetLabel}>YOU SEND</Text>
             <Text style={styles.amountInsetVal}>
@@ -244,7 +244,7 @@ function ConfirmationCard({
             <Text style={styles.amountInsetCurrency}>{txn.currency}</Text>
           </View>
 
-          {/* Fee breakdown */}
+          
           <View style={{ gap: 6, marginBottom: 16 }}>
             <View style={styles.breakdownRow}>
               <Text style={styles.breakdownLabel}>Amount</Text>
@@ -271,7 +271,7 @@ function ConfirmationCard({
             </View>
           </View>
 
-          {/* Action states */}
+          
           {status === "pending" && (
             <View style={styles.actionRow}>
               <AnimatedButton
@@ -472,7 +472,7 @@ function MessageBubble({
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+
 
 interface AIChatScreenProps {
   onBack: () => void;
@@ -679,7 +679,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
     >
       <View style={styles.mainContainer}>
 
-        {/* Header */}
+        
         <View style={styles.header}>
           <AnimatedButton
             onPress={onBack}
@@ -695,7 +695,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
           </View>
         </View>
 
-        {/* Scrollable messages area */}
+        
         <ScrollView
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
@@ -724,7 +724,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
             </View>
           )}
 
-          {/* Quick-action Chips list */}
+          
           {messages.length <= 1 && (
             <ScrollView
               horizontal
@@ -747,7 +747,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
 
         </ScrollView>
 
-        {/* Input Bar */}
+        
         <SafeAreaView style={{ backgroundColor: "#ffffff" }}>
           <View style={styles.inputBar}>
             <View style={styles.insetInputContainer}>
@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  // Confirmation card styling
+  
   confirmCard: {
     flex: 1,
     backgroundColor: "#ffffff",

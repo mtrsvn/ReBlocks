@@ -85,7 +85,7 @@ function AppContent() {
           )}
         </View>
 
-        {/* Floating AI Assistant FAB with 3D-Gradient Cover */}
+        
         {showNav && showFab && (
           <AnimatedButton
             onPress={() => navigate("ai-chat")}
@@ -103,7 +103,7 @@ function AppContent() {
           </AnimatedButton>
         )}
 
-        {/* Floating Bottom Nav */}
+        
         {showNav && (
           <View style={styles.navWrapper}>
             <BottomNav active={activeScreen} onNavigate={(scr) => navigate(scr)} />

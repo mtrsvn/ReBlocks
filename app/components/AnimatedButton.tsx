@@ -14,11 +14,11 @@ export function AnimatedButton({ onPress, children, style, disabled }: AnimatedB
 
   const handlePressIn = () => {
     if (disabled) return;
-    // Play light, satisfying haptic feedback instantly when user touches down
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     Animated.spring(scaleAnim, {
-      toValue: 0.94, // 6% shrink for a highly visible, responsive tactile feeling
+      toValue: 0.94, 
       useNativeDriver: true,
       tension: 180,
       friction: 12,

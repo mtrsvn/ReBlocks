@@ -101,13 +101,13 @@ export function TransactionHistory() {
         scrollEventThrottle={16}
         alwaysBounceVertical={true}
       >
-        {/* Header */}
+        
         <View style={styles.header}>
           <Text style={styles.headerSubtitle}>ACTIVITY RECORDS</Text>
           <Text style={styles.headerTitle}>Transfer History</Text>
         </View>
 
-        {/* Search Bar */}
+        
         <View style={styles.searchBarContainer}>
           <Search size={18} color="#9aa3b5" style={{ marginRight: 10 }} />
           <TextInput
@@ -124,7 +124,7 @@ export function TransactionHistory() {
           )}
         </View>
 
-        {/* Transactions List */}
+        
         <View style={{ gap: 12 }}>
           {filtered.map((tx) => (
             <AnimatedButton
@@ -163,7 +163,7 @@ export function TransactionHistory() {
         </View>
       </ScrollView>
 
-      {/* Transaction Details BottomSheet */}
+      
       <BottomSheet
         isOpen={!!selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     color: "#9aa3b5",
     fontWeight: "600",
   },
-  // Details Sheet styles
+  
   detailCard: {
     backgroundColor: "#ffffff",
     borderRadius: 16,

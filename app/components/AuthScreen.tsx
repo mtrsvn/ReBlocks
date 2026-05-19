@@ -100,12 +100,12 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-  // Form Fields
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Signup fields
+  
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -115,7 +115,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const [selectedPhoneCode, setSelectedPhoneCode] = useState(PHONE_CODES[0]);
   const [showPhoneCodeDropdown, setShowPhoneCodeDropdown] = useState(false);
 
-  // Recovery field
+  
   const [forgotEmail, setForgotEmail] = useState("");
   const [recoverySent, setRecoverySent] = useState(false);
 
@@ -193,13 +193,13 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* LOGIN SCREEN */}
+          
           {mode === "login" && (
             <View style={styles.formContainer}>
               <Text style={styles.headline}>Welcome back</Text>
               <Text style={styles.subheadline}>Sign in to continue your secure transfers</Text>
 
-              {/* Email Block */}
+              
               <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
               <View
                 style={[
@@ -221,7 +221,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 />
               </View>
 
-              {/* Password Block */}
+              
               <Text style={styles.inputLabel}>PASSWORD</Text>
               <View
                 style={[
@@ -248,12 +248,12 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 </TouchableOpacity>
               </View>
 
-              {/* Forgot text link */}
+              
               <TouchableOpacity onPress={() => switchMode("forgot")} style={styles.forgotContainer}>
                 <Text style={styles.forgotText}>Forgot password?</Text>
               </TouchableOpacity>
 
-              {/* Primary button */}
+              
               <AnimatedButton disabled={loading} onPress={handleLogin} style={styles.btnWrapper}>
                 <LinearGradient colors={["#10B981", "#059669"]} style={styles.btn}>
                   {loading ? (
@@ -267,14 +267,14 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 </LinearGradient>
               </AnimatedButton>
 
-              {/* Or Divider */}
+              
               <View style={styles.orDividerContainer}>
                 <View style={styles.orDividerLine} />
                 <Text style={styles.orDividerText}>or</Text>
                 <View style={styles.orDividerLine} />
               </View>
 
-              {/* Continue with Google */}
+              
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
@@ -287,7 +287,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 <Text style={styles.googleBtnText}>Continue with Google</Text>
               </TouchableOpacity>
 
-              {/* Toggle Account text footer */}
+              
               <View style={styles.footerRow}>
                 <Text style={styles.footerLabel}>New to ReBlocks? </Text>
                 <TouchableOpacity onPress={() => switchMode("signup")}>
@@ -297,13 +297,13 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             </View>
           )}
 
-          {/* SIGNUP SCREEN */}
+          
           {mode === "signup" && (
             <View style={styles.formContainer}>
               <Text style={styles.headline}>Create account</Text>
               <Text style={styles.subheadline}>Enter your details exactly as shown on your legal ID</Text>
 
-              {/* Full name input */}
+              
               <Text style={styles.inputLabel}>FULL LEGAL NAME</Text>
               <View
                 style={[
@@ -323,7 +323,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 />
               </View>
 
-              {/* Email Address */}
+              
               <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
               <View
                 style={[
@@ -345,7 +345,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 />
               </View>
 
-              {/* Phone Number */}
+              
               <Text style={styles.inputLabel}>PHONE NUMBER</Text>
               <View style={{ zIndex: 10 }}>
                 <View
@@ -412,7 +412,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 )}
               </View>
 
-              {/* Country Selection */}
+              
               <Text style={styles.inputLabel}>COUNTRY OF RESIDENCE</Text>
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -436,7 +436,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 <ChevronDown size={14} color="#94a3b8" />
               </TouchableOpacity>
 
-              {/* Dropdown overlay list */}
+              
               {showCountryDropdown && (
                 <View style={styles.dropdown}>
                   <ScrollView nestedScrollEnabled style={{ maxHeight: 150 }}>
@@ -459,7 +459,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 </View>
               )}
 
-              {/* Password */}
+              
               <Text style={styles.inputLabel}>CREATE PASSWORD</Text>
               <View
                 style={[
@@ -480,7 +480,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 />
               </View>
 
-              {/* Confirm password */}
+              
               <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
               <View
                 style={[
@@ -501,7 +501,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 />
               </View>
 
-              {/* KYC Checkbox */}
+              
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
@@ -525,7 +525,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 </Text>
               </TouchableOpacity>
 
-              {/* Submit button */}
+              
               <AnimatedButton disabled={loading} onPress={handleSignup} style={styles.btnWrapper}>
                 <LinearGradient colors={["#10B981", "#059669"]} style={styles.btn}>
                   {loading ? (
@@ -548,7 +548,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             </View>
           )}
 
-          {/* FORGOT PASSWORD SCREEN */}
+          
           {mode === "forgot" && (
             <View style={styles.formContainer}>
               {recoverySent ? (
@@ -573,7 +573,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   <Text style={styles.headline}>Reset password</Text>
                   <Text style={styles.subheadline}>Enter the email associated with your ReBlocks wallet</Text>
 
-                  {/* Recovery Email Block */}
+                  
                   <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
                   <View
                     style={[
@@ -595,7 +595,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     />
                   </View>
 
-                  {/* Submit link */}
+                  
                   <AnimatedButton disabled={loading} onPress={handleForgotPassword} style={styles.btnWrapper}>
                     <LinearGradient colors={["#10B981", "#059669"]} style={styles.btn}>
                       {loading ? (
@@ -606,7 +606,7 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     </LinearGradient>
                   </AnimatedButton>
 
-                  {/* Remember password? Login */}
+                  
                   <View style={styles.footerRow}>
                     <Text style={styles.footerLabel}>Remember password? </Text>
                     <TouchableOpacity onPress={() => switchMode("login")}>
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
     color: "#10B981",
     fontWeight: "800",
   },
-  // Signup Dropdown
+  
   countryValue: {
     fontSize: 14,
     color: "#0f172a",
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     fontWeight: "700",
   },
-  // Success Wrapper
+  
   successWrapper: {
     alignItems: "center",
     paddingVertical: 20,

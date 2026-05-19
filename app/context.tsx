@@ -111,7 +111,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     fetchRates();
     
-    // Polling rate fetcher every 30 seconds for real-time live rates
+    
     const interval = setInterval(fetchRates, 30000);
     return () => clearInterval(interval);
   }, []);

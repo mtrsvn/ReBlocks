@@ -67,13 +67,13 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
   const [isAdding, setIsAdding] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(null);
 
-  // Form State
+  
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("ph");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
 
-  // Selectors State
+  
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showBankPicker, setShowBankPicker] = useState(false);
 
@@ -125,7 +125,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         scrollEventThrottle={16}
         alwaysBounceVertical={true}
       >
-        {/* Header */}
+        
         <View style={styles.header}>
           <View>
             <Text style={styles.headerSubtitle}>SAVED CONTACTS</Text>
@@ -144,7 +144,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
           </AnimatedButton>
         </View>
 
-        {/* Search Bar */}
+        
         <View style={styles.searchBarContainer}>
           <Search size={18} color="#9aa3b5" style={{ marginRight: 10 }} />
           <TextInput
@@ -161,7 +161,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
           )}
         </View>
 
-        {/* Recipients Grid / List */}
+        
         <View style={{ gap: 12 }}>
           {filtered.map((r) => (
             <AnimatedButton
@@ -195,14 +195,14 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         </View>
       </ScrollView>
 
-      {/* Add Recipient BottomSheet */}
+      
       <BottomSheet
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         title="New Recipient"
       >
         <View style={{ gap: 16 }}>
-          {/* Account Name */}
+          
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>ACCOUNT NAME</Text>
             <TextInput
@@ -214,7 +214,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             />
           </View>
 
-          {/* Country Selector */}
+          
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>COUNTRY</Text>
             <AnimatedButton
@@ -228,7 +228,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             </AnimatedButton>
           </View>
 
-          {/* Payment Method Selector */}
+          
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>PAYMENT METHOD</Text>
             <AnimatedButton
@@ -242,7 +242,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             </AnimatedButton>
           </View>
 
-          {/* Account Number */}
+          
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>ACCOUNT NUMBER</Text>
             <TextInput
@@ -255,7 +255,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             />
           </View>
 
-          {/* Action Button */}
+          
           <AnimatedButton
             disabled={!name || !bank || !account}
             onPress={handleSave}
@@ -274,7 +274,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         </View>
       </BottomSheet>
 
-      {/* Recipient Details BottomSheet */}
+      
       <BottomSheet
         isOpen={!!selectedRecipient}
         onClose={() => setSelectedRecipient(null)}
@@ -282,7 +282,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
       >
         {selectedRecipient && (
           <View style={{ gap: 16 }}>
-            {/* Header info */}
+            
             <View style={styles.detailCard}>
               <View style={styles.detailAvatarWrapper}>
                 <Text style={styles.detailAvatarInitials}>
@@ -306,7 +306,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
               </View>
             </View>
 
-            {/* Bank details grid */}
+            
             <View style={styles.detailInfoBox}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>PAYMENT METHOD</Text>
@@ -327,7 +327,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
               </View>
             </View>
 
-            {/* Action buttons */}
+            
             <View style={{ flexDirection: "row", gap: 12 }}>
               <AnimatedButton
                 onPress={() => {
@@ -359,7 +359,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         )}
       </BottomSheet>
 
-      {/* Country Modal Picker */}
+      
       <Modal visible={showCountryPicker} animationType="slide" transparent>
         <View style={styles.pickerModalOverlay}>
           <SafeAreaView style={styles.pickerModalContent}>
@@ -377,7 +377,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
                   activeOpacity={0.7}
                   onPress={() => {
                     setCountryCode(item.code);
-                    setBank(""); // Reset bank
+                    setBank(""); 
                     setShowCountryPicker(false);
                   }}
                   style={[
@@ -395,7 +395,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         </View>
       </Modal>
 
-      {/* Bank Modal Picker */}
+      
       <Modal visible={showBankPicker} animationType="slide" transparent>
         <View style={styles.pickerModalOverlay}>
           <SafeAreaView style={styles.pickerModalContent}>
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     color: "#9aa3b5",
     fontWeight: "600",
   },
-  // Form styles
+  
   inputGroup: {
     gap: 6,
   },
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  // Detail Card styles
+  
   detailCard: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
-  // Picker styles
+  
   pickerModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.4)",

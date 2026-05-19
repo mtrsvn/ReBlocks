@@ -112,7 +112,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [notifications, setNotifications] = useState(true);
   const [twoFactor, setTwoFactor] = useState(true);
 
-  // Modal visibilities
+  
   const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
@@ -120,7 +120,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
 
-  // Account states
+  
   const [name, setName] = useState("Carlos Mendoza");
   const [address, setAddress] = useState("123 Metro Manila, Philippines");
   const [birthday, setBirthday] = useState("1995-10-12");
@@ -128,14 +128,14 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [phone, setPhone] = useState("+63 912 345 6789");
   const [email, setEmail] = useState("carlos.mendoza@email.com");
 
-  // PIN states
+  
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [pinSuccess, setPinSuccess] = useState(false);
 
-  // Temporary edit states for modals
+  
   const [tempName, setTempName] = useState("Carlos Mendoza");
   const [tempAddress, setTempAddress] = useState("123 Metro Manila, Philippines");
   const [tempBirthday, setTempBirthday] = useState("1995-10-12");
@@ -307,16 +307,16 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         scrollEventThrottle={16}
         alwaysBounceVertical={true}
       >
-        {/* Header */}
+        
         <View style={styles.header}>
           <Text style={styles.headerSubtitle}>ACCOUNT</Text>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
 
-        {/* Profile Card */}
+        
         <View style={styles.flatCard}>
           <View style={styles.profileHeaderRow}>
-            {/* Avatar */}
+            
             <View style={{ position: "relative" }}>
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -348,7 +348,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
               </AnimatedButton>
             </View>
 
-            {/* Info */}
+            
             <View style={{ flex: 1 }}>
               <Text style={styles.profileName}>{name}</Text>
               <Text style={styles.profileEmail}>{email}</Text>
@@ -361,10 +361,10 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
             </View>
           </View>
 
-          {/* Divider */}
+          
           <View style={styles.cardDivider} />
 
-          {/* Stats Grid */}
+          
           <View style={styles.statsGrid}>
             {[
               { label: "Transfers", value: "47" },
@@ -379,7 +379,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* KYC Section Banner */}
+        
         <LinearGradient
           colors={["#10B981", "#059669"]}
           style={styles.kycBanner}
@@ -396,7 +396,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
         </LinearGradient>
 
-        {/* Payment Methods */}
+        
         <View style={{ marginBottom: 20 }}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>PAYMENT METHODS</Text>
@@ -440,7 +440,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
               </View>
             ))}
 
-            {/* Web3 Wallet */}
+            
             <View style={styles.flatCardRow}>
               <View style={styles.methodIconWrapper}>
                 <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -470,7 +470,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* Settings Sections */}
+        
         {settingSections.map((section) => (
           <View key={section.title} style={{ marginBottom: 20 }}>
             <Text style={styles.sectionTitle}>{section.title.toUpperCase()}</Text>
@@ -519,7 +519,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
         ))}
 
-        {/* Sign Out Button */}
+        
         <AnimatedButton
           style={styles.signOutBtn}
           onPress={() => {
@@ -535,11 +535,11 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           <Text style={styles.signOutBtnText}>Sign Out</Text>
         </AnimatedButton>
 
-        {/* App Version */}
+        
         <Text style={styles.versionText}>v0.1.0-dev · ReBlocks Development Phase</Text>
       </ScrollView>
 
-      {/* BottomSheets for Settings */}
+      
       <BottomSheet
         isOpen={showPersonalInfo}
         onClose={() => setShowPersonalInfo(false)}
@@ -829,7 +829,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         title="Upload Profile Photo"
       >
         <View style={{ paddingBottom: 24, gap: 18 }}>
-          {/* Action Row */}
+          
           <View style={{ flexDirection: "row", gap: 12 }}>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -868,7 +868,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Remove Current Photo */}
+          
           {profileImage && (
             <TouchableOpacity
               activeOpacity={0.8}
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Modal styles
+  
   modalForm: {
     gap: 16,
     paddingBottom: 20,

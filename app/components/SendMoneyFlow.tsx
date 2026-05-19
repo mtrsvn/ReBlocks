@@ -66,16 +66,16 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
 
-  // Camera permissions hook
+  
   const [permission, requestPermission] = useCameraPermissions();
 
-  // New Recipient State
+  
   const [newName, setNewName] = useState("");
   const [newCountry, setNewCountry] = useState(COUNTRIES[0]);
   const [newBank, setNewBank] = useState("");
   const [newAccountNumber, setNewAccountNumber] = useState("");
 
-  // Amount State
+  
   const [sendAmount, setSendAmount] = useState("");
   const [sendCurrency, setSendCurrency] = useState(preselectedRecipient ? preselectedRecipient.currency : (defaultCurrency === "USD" ? "USD" : "PHP"));
 
@@ -85,7 +85,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const exchangeRate = exchangeRates[sendCurrency] || 1;
   const receiveAmount = parseFloat(sendAmount) || 0;
 
-  // Calculate equivalent in the selected default currency
+  
   const phpValue = sendCurrency === "PHP" ? receiveAmount : receiveAmount / exchangeRate;
   const baseEquivalent = defaultCurrency === "USD" ? phpValue * 0.018 : phpValue;
   const totalToPay = baseEquivalent + baseFee;
@@ -158,7 +158,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
   return (
     <View style={styles.mainContainer}>
-      {/* Header */}
+      
       <View style={styles.header}>
         <AnimatedButton
           onPress={handleBack}
@@ -179,7 +179,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* STEP 1: Recipient Selection */}
+        
         {step === 1 && (
           <View style={{ gap: 16 }}>
             {showQRScanner ? (
@@ -191,7 +191,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                     if (data) {
                       setShowQRScanner(false);
                       setIsAddingNew(true);
-                      // Try splitting comma separated QR data: Name,Country,Bank,Account
+                      
                       const parts = data.split(",");
                       if (parts.length >= 4) {
                         setNewName(parts[0].trim());
@@ -200,7 +200,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                         setNewBank(parts[2].trim());
                         setNewAccountNumber(parts[3].trim());
                       } else {
-                        // Fallback
+                        
                         setNewName(data.substring(0, 35));
                         setNewCountry(COUNTRIES[0]);
                         setNewBank("GCash");
@@ -242,7 +242,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   </AnimatedButton>
                 </View>
 
-                {/* List saved recipients */}
+                
                 <View style={{ gap: 10 }}>
                   <Text style={styles.sectionLabel}>SAVED RECIPIENTS</Text>
                   {recipients.map((r) => (
@@ -272,7 +272,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </>
             ) : (
               <View style={{ gap: 16 }}>
-                {/* Form Fields */}
+                
                 <View style={styles.inputGroup}>
                   <Text style={styles.formLabel}>RECIPIENT FULL NAME</Text>
                   <TextInput
@@ -379,10 +379,10 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
           </View>
         )}
 
-        {/* STEP 2: Amount Entry */}
+        
         {step === 2 && (
           <View style={{ gap: 20 }}>
-            {/* Recipient Details Row */}
+            
             <View style={styles.flatCardRow}>
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarText}>
@@ -399,7 +399,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </View>
             </View>
 
-            {/* Large Amount Input Card */}
+            
             <View style={styles.flatCard}>
               <Text style={styles.inputCardLabel}>Amount to Send ({sendCurrency})</Text>
               <View style={styles.amountInputContainer}>
@@ -416,7 +416,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </View>
             </View>
 
-            {/* Calculations Card */}
+            
             <View style={styles.calcInsetCard}>
               <View style={styles.calcRow}>
                 <View style={styles.labelCol}>
@@ -458,7 +458,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </View>
             </View>
 
-            {/* Continue Button */}
+            
             <AnimatedButton
               disabled={!sendAmount || parseFloat(sendAmount) <= 0}
               onPress={handleNext}
@@ -477,14 +477,14 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
           </View>
         )}
 
-        {/* STEP 3: Review */}
+        
         {step === 3 && (
           <View style={{ gap: 20 }}>
             <Text style={styles.instructionText}>
               Please verify the details before payment.
             </Text>
 
-            {/* Funding Source Selector info */}
+            
             <View style={styles.calcInsetCard}>
               <Text style={styles.sectionLabel}>FUNDING SOURCE</Text>
               <View style={styles.fundingRow}>
@@ -501,7 +501,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </View>
             </View>
 
-            {/* Review amounts card */}
+            
             <View style={styles.flatCard}>
               <View style={styles.reviewFlowRow}>
                 <View style={styles.reviewCol}>
@@ -553,7 +553,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </View>
             </View>
 
-            {/* Confirm Pay Button */}
+            
             <AnimatedButton
               onPress={handleConfirm}
               style={styles.primaryBtnWrapper}
@@ -568,7 +568,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
           </View>
         )}
 
-        {/* STEP 4: Success Screen */}
+        
         {step === 4 && (
           <View style={styles.successContainer}>
             <View style={styles.successIconWrapper}>
@@ -580,7 +580,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               Funds are being delivered to {selectedRecipient?.name || newName}
             </Text>
 
-            {/* Unified Ultra-Premium Web3 Receipt Panel */}
+            
             <View style={styles.calcInsetCard}>
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Transaction ID</Text>
@@ -636,7 +636,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               </View>
             </View>
 
-            {/* Actions */}
+            
             <View style={{ width: "100%", gap: 12 }}>
               <AnimatedButton
                 onPress={handleShare}
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 2,
   },
-  // QR Scan View
+  
   qrScannerContainer: {
     height: 380,
     borderRadius: 24,
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-  // Form input field styles
+  
   inputGroup: {
     gap: 6,
   },
@@ -935,7 +935,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
   },
-  // Step 2 styles
+  
   flatCard: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#10B981",
   },
-  // Step 3 Review styles
+  
   instructionText: {
     fontSize: 12,
     color: "#9aa3b5",
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(163, 177, 198, 0.1)",
     marginVertical: 16,
   },
-  // Step 4 Success styles
+  
   successContainer: {
     alignItems: "center",
     paddingTop: 20,
