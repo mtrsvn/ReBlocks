@@ -6,10 +6,11 @@ import {
   SafeAreaView,
   Platform,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Bot } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { AppProvider, Recipient } from "./app/context";
+import { AppProvider, Recipient, useApp } from "./app/context";
 import { BottomNav } from "./app/components/BottomNav";
 import { HomeScreen } from "./app/components/HomeScreen";
 import { SendMoneyFlow } from "./app/components/SendMoneyFlow";
@@ -19,6 +20,8 @@ import { ProfileScreen } from "./app/components/ProfileScreen";
 import { AIChatScreen } from "./app/components/AIChatScreen";
 import { AnimatedButton } from "./app/components/AnimatedButton";
 import { AuthScreen } from "./app/components/AuthScreen";
+import { auth } from "./app/firebase";
+import { signOut } from "firebase/auth";
 
 type Screen = "home" | "send" | "beneficiaries" | "history" | "profile" | "ai-chat";
 
@@ -34,7 +37,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { userProfile, isAuthLoading } = useApp();
   const [activeScreen, setActiveScreen] = useState<Screen>("home");
   const [preselectedRecipient, setPreselectedRecipient] = useState<Recipient | null>(null);
 
@@ -43,11 +46,28 @@ function AppContent() {
     setActiveScreen(screen);
   };
 
-  if (!isAuthenticated) {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("home");
+    } catch (e) {
+      console.log("Error signing out:", e);
+    }
+  };
+
+  if (isAuthLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc" }}>
+        <ActivityIndicator size="large" color="#10B981" />
+      </View>
+    );
+  }
+
+  if (!userProfile) {
     return (
       <View style={styles.appContainer}>
         <StatusBar style="dark" />
-        <AuthScreen onLoginSuccess={() => setIsAuthenticated(true)} />
+        <AuthScreen />
       </View>
     );
   }
@@ -79,7 +99,7 @@ function AppContent() {
             />
           )}
           {activeScreen === "history" && <TransactionHistory />}
-          {activeScreen === "profile" && <ProfileScreen onLogout={() => { setIsAuthenticated(false); navigate("home"); }} />}
+          {activeScreen === "profile" && <ProfileScreen onLogout={handleLogout} />}
           {activeScreen === "ai-chat" && (
             <AIChatScreen onBack={() => navigate("home")} />
           )}

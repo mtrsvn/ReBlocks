@@ -1,4 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, db } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  addDoc, 
+  query, 
+  orderBy, 
+  getDocs 
+} from 'firebase/firestore';
 
 export interface FundingSource {
   id: string;
@@ -38,42 +52,50 @@ export interface Transaction {
   estimatedArrival?: string;
 }
 
+export interface UserProfile {
+  uid: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  country: string;
+  address?: string;
+  birthday?: string;
+  emailVerified: boolean;
+  KYCVerified: boolean;
+  isAdmin: boolean;
+  isVerified: boolean;
+  kycStatus: 'pending' | 'verified' | 'failed';
+  defaultCurrency: 'USD' | 'PHP';
+}
+
 interface AppContextType {
+  userProfile: UserProfile | null;
+  isAuthLoading: boolean;
   fundingSources: FundingSource[];
   recipients: Recipient[];
   transactions: Transaction[];
   exchangeRates: { [key: string]: number };
   activeFundingSourceId: string;
   defaultCurrency: 'USD' | 'PHP';
-  setDefaultCurrency: (cur: 'USD' | 'PHP') => void;
+  setDefaultCurrency: (cur: 'USD' | 'PHP') => Promise<void>;
   setActiveFundingSourceId: (id: string) => void;
-  addRecipient: (recipient: Omit<Recipient, 'id'>) => void;
-  updateRecipient: (id: string, recipient: Partial<Recipient>) => void;
-  deleteRecipient: (id: string) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => void;
+  addRecipient: (recipient: Omit<Recipient, 'id'>) => Promise<void>;
+  updateRecipient: (id: string, recipient: Partial<Recipient>) => Promise<void>;
+  deleteRecipient: (id: string) => Promise<void>;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => Promise<void>;
+  updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [defaultCurrency, setDefaultCurrency] = useState<'USD' | 'PHP'>('USD');
-  const [fundingSources] = useState<FundingSource[]>([
-    { id: 'fs1', name: 'Main Savings', type: 'bank', last4: '8842', accountNumber: '0012 3456 7890 8842', provider: 'BPI', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
-    { id: 'fs2', name: 'Travel Card', type: 'card', last4: '1099', accountNumber: '4532 7890 1234 1099', provider: 'Visa', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
-  ]);
-  const [activeFundingSourceId, setActiveFundingSourceId] = useState('fs1');
-  const [recipients, setRecipients] = useState<Recipient[]>([
-    { id: '1', name: 'Maria Mendoza', countryCode: 'ph', currency: 'PHP', bankName: 'GCash', accountNumber: '0917 123 4567', type: 'wallet' },
-    { id: '2', name: 'Siti Rahman', countryCode: 'sg', currency: 'SGD', bankName: 'DBS Bank', accountNumber: '1234 5678 90', type: 'bank' },
-    { id: '3', name: 'Nguyen Van', countryCode: 'vn', currency: 'VND', bankName: 'Vietcombank', accountNumber: '1234567890', type: 'bank' },
-  ]);
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { id: 'tx1', type: 'send', amount: 1515, currency: 'PHP', recipientName: 'Maria Mendoza', date: new Date(Date.now() - 86400000).toISOString(), status: 'completed', fee: 15, fundingSourceId: 'fs1', recipientAmount: 1500, recipientCurrency: 'PHP', exchangeRate: 1 },
-    { id: 'tx2', type: 'send', amount: 4182, currency: 'PHP', recipientName: 'Siti Rahman', date: new Date(Date.now() - 172800000).toISOString(), status: 'completed', fee: 15, fundingSourceId: 'fs1', recipientAmount: 100, recipientCurrency: 'SGD', exchangeRate: 0.024 },
-    { id: 'tx3', type: 'send', amount: 1801, currency: 'PHP', recipientName: 'Nguyen Van', date: new Date(Date.now() - 259200000).toISOString(), status: 'completed', fee: 15, fundingSourceId: 'fs1', recipientAmount: 1000, recipientCurrency: 'VND', exchangeRate: 0.0024 },
-    { id: 'tx4', type: 'send', amount: 2515, currency: 'PHP', recipientName: 'Maria Mendoza', date: new Date(Date.now() - 432000000).toISOString(), status: 'completed', fee: 15, fundingSourceId: 'fs1', recipientAmount: 2500, recipientCurrency: 'PHP', exchangeRate: 1 },
-    { id: 'tx5', type: 'send', amount: 3348, currency: 'PHP', recipientName: 'Siti Rahman', date: new Date(Date.now() - 604800000).toISOString(), status: 'completed', fee: 15, fundingSourceId: 'fs1', recipientAmount: 80, recipientCurrency: 'SGD', exchangeRate: 0.024 },
-  ]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [defaultCurrency, setDefaultCurrencyState] = useState<'USD' | 'PHP'>('USD');
+  const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
+  const [activeFundingSourceId, setActiveFundingSourceId] = useState('');
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const [exchangeRates, setExchangeRates] = useState<{ [key: string]: number }>({
     'PHP': 1,
@@ -110,37 +132,165 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     fetchRates();
-    
-    
     const interval = setInterval(fetchRates, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const addRecipient = (recipient: Omit<Recipient, 'id'>) => {
-    const newRecipient = { ...recipient, id: Math.random().toString(36).substr(2, 9) };
-    setRecipients(prev => [...prev, newRecipient]);
+  useEffect(() => {
+    let unsubscribeUser = () => {};
+    let unsubscribeRecipients = () => {};
+    let unsubscribeTransactions = () => {};
+    let unsubscribeFundingSources = () => {};
+
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthLoading(true);
+        const userDocRef = doc(db, "users", user.uid);
+
+        unsubscribeUser = onSnapshot(userDocRef, async (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            setUserProfile(data);
+            setDefaultCurrencyState(data.defaultCurrency || 'USD');
+
+            if (user.emailVerified && !data.isVerified && data.kycStatus === 'pending') {
+            }
+          } else {
+            setUserProfile(null);
+          }
+          setIsAuthLoading(false);
+        }, (err) => {
+          console.log("Error fetching user profile:", err);
+          setIsAuthLoading(false);
+        });
+
+        const recipientsCol = collection(db, "users", user.uid, "recipients");
+        unsubscribeRecipients = onSnapshot(recipientsCol, (snapshot) => {
+          const loadedRecipients: Recipient[] = [];
+          snapshot.forEach((d) => {
+            loadedRecipients.push({ ...d.data(), id: d.id } as Recipient);
+          });
+          setRecipients(loadedRecipients);
+        });
+
+        const transactionsCol = collection(db, "users", user.uid, "transactions");
+        const transactionsQuery = query(transactionsCol, orderBy("date", "desc"));
+        unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
+          const loadedTransactions: Transaction[] = [];
+          snapshot.forEach((d) => {
+            loadedTransactions.push({ ...d.data(), id: d.id } as Transaction);
+          });
+          setTransactions(loadedTransactions);
+        });
+
+        const fundingSourcesCol = collection(db, "users", user.uid, "fundingSources");
+        unsubscribeFundingSources = onSnapshot(fundingSourcesCol, async (snapshot) => {
+          const loadedFundingSources: FundingSource[] = [];
+          snapshot.forEach((d) => {
+            loadedFundingSources.push({ ...d.data(), id: d.id } as FundingSource);
+          });
+
+          if (loadedFundingSources.length === 0) {
+            const defaultFS: Omit<FundingSource, 'id'>[] = [
+              { name: 'Main Savings', type: 'bank', last4: '8842', accountNumber: '0012 3456 7890 8842', provider: 'BPI', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
+              { name: 'Travel Card', type: 'card', last4: '1099', accountNumber: '4532 7890 1234 1099', provider: 'Visa', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
+            ];
+            for (const fsItem of defaultFS) {
+              await addDoc(fundingSourcesCol, fsItem);
+            }
+          } else {
+            setFundingSources(loadedFundingSources);
+            setActiveFundingSourceId((prev) => {
+              if (prev && loadedFundingSources.some((fs) => fs.id === prev)) {
+                return prev;
+              }
+              return loadedFundingSources[0]?.id || '';
+            });
+          }
+        });
+
+      } else {
+        setUserProfile(null);
+        setRecipients([]);
+        setTransactions([]);
+        setFundingSources([]);
+        setActiveFundingSourceId('');
+        setIsAuthLoading(false);
+
+        unsubscribeUser();
+        unsubscribeRecipients();
+        unsubscribeTransactions();
+        unsubscribeFundingSources();
+      }
+    });
+
+    return () => {
+      unsubAuth();
+      unsubscribeUser();
+      unsubscribeRecipients();
+      unsubscribeTransactions();
+      unsubscribeFundingSources();
+    };
+  }, []);
+
+  const setDefaultCurrency = async (cur: 'USD' | 'PHP') => {
+    if (!auth.currentUser) return;
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userDocRef, { defaultCurrency: cur });
   };
 
-  const updateRecipient = (id: string, updated: Partial<Recipient>) => {
-    setRecipients(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+  const addRecipient = async (recipient: Omit<Recipient, 'id'>) => {
+    if (!auth.currentUser) return;
+    const colRef = collection(db, "users", auth.currentUser.uid, "recipients");
+    await addDoc(colRef, recipient);
   };
 
-  const deleteRecipient = (id: string) => {
-    setRecipients(prev => prev.filter(r => r.id !== id));
+  const updateRecipient = async (id: string, updated: Partial<Recipient>) => {
+    if (!auth.currentUser) return;
+    const docRef = doc(db, "users", auth.currentUser.uid, "recipients", id);
+    await updateDoc(docRef, updated);
   };
 
-  const addTransaction = (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => {
-    const newTx: Transaction = {
+  const deleteRecipient = async (id: string) => {
+    if (!auth.currentUser) return;
+    const docRef = doc(db, "users", auth.currentUser.uid, "recipients", id);
+    await deleteDoc(docRef);
+  };
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => {
+    if (!auth.currentUser) return;
+    const colRef = collection(db, "users", auth.currentUser.uid, "transactions");
+    await addDoc(colRef, {
       ...transaction,
-      id: 'tx-' + Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
       status: 'completed'
-    };
-    setTransactions(prev => [newTx, ...prev]);
+    });
+  };
+
+  const updateUserProfile = async (profile: Partial<UserProfile>) => {
+    if (!auth.currentUser) return;
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userDocRef, profile);
   };
 
   return (
-    <AppContext.Provider value={{ fundingSources, recipients, transactions, exchangeRates, activeFundingSourceId, setActiveFundingSourceId, defaultCurrency, setDefaultCurrency, addRecipient, updateRecipient, deleteRecipient, addTransaction }}>
+    <AppContext.Provider value={{ 
+      userProfile, 
+      isAuthLoading, 
+      fundingSources, 
+      recipients, 
+      transactions, 
+      exchangeRates, 
+      activeFundingSourceId, 
+      setActiveFundingSourceId, 
+      defaultCurrency, 
+      setDefaultCurrency, 
+      addRecipient, 
+      updateRecipient, 
+      deleteRecipient, 
+      addTransaction,
+      updateUserProfile
+    }}>
       {children}
     </AppContext.Provider>
   );

@@ -1,0 +1,140 @@
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const axios = require('axios');
+const admin = require('firebase-admin');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+const serviceAccountPath = path.join(__dirname, 'service-account.json');
+let firebaseAdminInitialized = false;
+
+if (fs.existsSync(serviceAccountPath)) {
+  try {
+    const serviceAccount = require(serviceAccountPath);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    firebaseAdminInitialized = true;
+    console.log('✅ [Firebase Admin] Initialized successfully with service-account.json');
+  } catch (error) {
+    console.error('❌ [Firebase Admin] Initialization failed:', error.message);
+  }
+} else {
+  console.log('⚠️ [Firebase Admin] service-account.json was not found in /backend.');
+  console.log('👉 To enable live database synchronization, download your private key file from:');
+  console.log('   Firebase Console -> Project Settings -> Service Accounts -> Generate New Private Key');
+  console.log('   and save it as "/backend/service-account.json"\n');
+  
+  if (process.env.FIREBASE_PROJECT_ID) {
+    try {
+      admin.initializeApp({
+        projectId: process.env.FIREBASE_PROJECT_ID
+      });
+      firebaseAdminInitialized = true;
+      console.log(`ℹ️ [Firebase Admin] Initialized with Project ID: ${process.env.FIREBASE_PROJECT_ID}`);
+    } catch (e) {
+      console.log('⚠️ [Firebase Admin] Failed basic initialization:', e.message);
+    }
+  }
+}
+
+app.post('/api/didit/create-session', async (req, res) => {
+  const { uid, workflowId } = req.body;
+  const apiKey = process.env.DIDIT_API_KEY || '9bIMDMRJiozzUVtDt9rdsM1Q5E7ow70tIqFavg2PNI0';
+  const finalWorkflowId = workflowId || process.env.DIDIT_WORKFLOW_ID;
+
+  if (!uid) {
+    return res.status(400).json({ success: false, error: 'User UID is required' });
+  }
+
+  if (!finalWorkflowId) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Didit Workflow ID is required. Please add it to your backend/.env file.' 
+    });
+  }
+
+  try {
+    console.log(`🚀 [Didit API] Creating verification session for uid: ${uid}`);
+    const response = await axios.post(
+      'https://verification.didit.me/v3/session/',
+      {
+        workflow_id: finalWorkflowId,
+        vendor_data: uid,
+        callback: process.env.DIDIT_CALLBACK_URL || 'reblocks://kyc-complete'
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        }
+      }
+    );
+
+    console.log('✅ [Didit API] Session created successfully:', response.data.session_id);
+    return res.status(200).json({ success: true, data: response.data });
+  } catch (error) {
+    const errorDetails = error.response ? error.response.data : error.message;
+    console.error('❌ [Didit API] Session creation failed:', errorDetails);
+    return res.status(500).json({ success: false, error: errorDetails });
+  }
+});
+
+app.post('/api/didit/webhook', async (req, res) => {
+  console.log('📥 [Didit Webhook] Received status update event:');
+  console.log(JSON.stringify(req.body, null, 2));
+
+  const { status, vendor_data, decision } = req.body;
+  const kycStatus = status || (decision ? decision.status : null);
+
+  if (!vendor_data) {
+    console.log('⚠️ [Didit Webhook] Missing vendor_data (user UID). Event skipped.');
+    return res.status(200).json({ success: true, message: 'Skipped - no vendor_data' });
+  }
+
+  console.log(`ℹ️ [Didit Webhook] User: ${vendor_data} | Status: ${kycStatus}`);
+
+  if (kycStatus === 'Approved') {
+    if (firebaseAdminInitialized) {
+      try {
+        const userRef = admin.firestore().collection('users').doc(vendor_data);
+        await userRef.update({
+          isVerified: true,
+          KYCVerified: true,
+          kycStatus: 'verified',
+          kycVerifiedAt: new Date().toISOString()
+        });
+        console.log(`🎉 [Firestore Sync] User ${vendor_data} has been updated to VERIFIED in Firestore!`);
+      } catch (error) {
+        console.error(`❌ [Firestore Sync] Failed to update Firestore user profile:`, error.message);
+      }
+    } else {
+      console.log('⚠️ [Firestore Sync] Skipped - Firebase Admin is not fully initialized.');
+    }
+  }
+
+  return res.status(200).json({ 
+    success: true, 
+    message: 'Webhook received and processed' 
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    firebaseInitialized: firebaseAdminInitialized 
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`\n🚀 Reblocks Backend server is running on http://localhost:${PORT}`);
+  console.log(`📡 Local Webhook endpoint: http://localhost:${PORT}/api/didit/webhook`);
+});

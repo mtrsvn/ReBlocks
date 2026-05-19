@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -26,11 +26,23 @@ import {
   ChevronDown,
   Shield,
   ArrowLeft,
+  Calendar,
 } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { AnimatedButton } from "./AnimatedButton";
+import { DatePickerModal } from "./DatePickerModal";
+import { auth, db } from "../firebase";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  sendEmailVerification, 
+  sendPasswordResetEmail, 
+  updateProfile,
+  signOut
+} from "firebase/auth";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 
 function GoogleIcon({ size = 18 }: { size?: number }) {
   return (
@@ -89,35 +101,43 @@ function formatPhoneNumber(text: string, countryCode: string): string {
   }
 }
 
-interface AuthScreenProps {
-  onLoginSuccess: (userName: string) => void;
-}
+interface AuthScreenProps {}
 
-type AuthMode = "login" | "signup" | "forgot";
+type AuthMode = "login" | "signup" | "forgot" | "verifyEmail";
 
-export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
+export function AuthScreen({}: AuthScreenProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState(new Date(2000, 0, 1));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [agreeKYC, setAgreeKYC] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [selectedPhoneCode, setSelectedPhoneCode] = useState(PHONE_CODES[0]);
   const [showPhoneCodeDropdown, setShowPhoneCodeDropdown] = useState(false);
 
-  
   const [forgotEmail, setForgotEmail] = useState("");
   const [recoverySent, setRecoverySent] = useState(false);
+
+  useEffect(() => {
+    const checkUser = () => {
+      if (auth.currentUser) {
+        if (!auth.currentUser.emailVerified) {
+          setMode("verifyEmail");
+        }
+      }
+    };
+    checkUser();
+  }, []);
 
   const switchMode = (newMode: AuthMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -128,20 +148,36 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     setShowPhoneCodeDropdown(false);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
     setLoading(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        await sendEmailVerification(user);
+        setMode("verifyEmail");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Alert.alert("Verify your Email", "A verification link has been sent to your email. Please verify it to continue.");
+      } else {
+        const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, { emailVerified: true });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error: any) {
+      console.log("Login error:", error);
+      Alert.alert("Authentication Failed", error.message || "Invalid email or password.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
       setLoading(false);
-      onLoginSuccess(fullName || "Carlos Mendoza");
-    }, 1500);
+    }
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!fullName || !email || !phone || !password || !confirmPassword) {
       Alert.alert("Missing Details", "Please fill in all details to create your account.");
       return;
@@ -156,28 +192,120 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     }
 
     setLoading(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: fullName });
+
+      await sendEmailVerification(user);
+
+      // Format date as YYYY-MM-DD
+      const dobFormatted = dateOfBirth.toISOString().split('T')[0];
+
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        fullName,
+        email,
+        phone: `${selectedPhoneCode?.code || "+63"} ${phone}`,
+        country: selectedCountry?.name || "Philippines",
+        birthday: dobFormatted,
+        emailVerified: false,
+        KYCVerified: false,
+        isAdmin: false,
+        isVerified: false,
+        kycStatus: 'pending',
+        defaultCurrency: 'USD',
+        createdAt: new Date().toISOString()
+      });
+
+      // Clear signup form and go back to login
+      setFullName("");
+      setEmail("");
+      setPhone("");
+      setPassword("");
+      setConfirmPassword("");
+      setDateOfBirth(new Date(2000, 0, 1));
+      setAgreeKYC(false);
+      
+      switchMode("login");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         "Account Created!",
-        "Your ReBlocks L2 Web3 smart wallet has been created successfully. Welcome aboard!",
-        [{ text: "Get Started", onPress: () => onLoginSuccess(fullName) }]
+        "Your account was created successfully. A verification link has been sent to your email. Please verify it when you try to log in.",
       );
-    }, 2000);
+    } catch (error: any) {
+      console.log("Signup error:", error);
+      Alert.alert("Registration Failed", error.message || "Failed to create account.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
     if (!forgotEmail) {
       Alert.alert("Error", "Please enter your email address.");
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await sendPasswordResetEmail(auth, forgotEmail);
       setRecoverySent(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }, 1200);
+    } catch (error: any) {
+      Alert.alert("Reset Failed", error.message || "Failed to send reset email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkVerification = async () => {
+    if (auth.currentUser) {
+      setLoading(true);
+      try {
+        await auth.currentUser.reload();
+        if (auth.currentUser.emailVerified) {
+          const userDocRef = doc(db, "users", auth.currentUser.uid);
+          await updateDoc(userDocRef, { emailVerified: true });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Alert.alert("Email Verified!", "Welcome to ReBlocks! Your account is active now.");
+        } else {
+          Alert.alert("Not Verified Yet", "Please check your inbox and tap the link to verify your email. If you didn't receive it, you can tap Resend below.");
+        }
+      } catch (error: any) {
+        Alert.alert("Error checking verification", error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const resendVerification = async () => {
+    if (auth.currentUser) {
+      setLoading(true);
+      try {
+        await sendEmailVerification(auth.currentUser);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Link Sent", "A fresh verification link has been sent to " + auth.currentUser.email);
+      } catch (error: any) {
+        Alert.alert("Error sending link", error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleBackToLogin = async () => {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      switchMode("login");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -322,6 +450,29 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   style={styles.input}
                 />
               </View>
+
+              
+              <Text style={styles.inputLabel}>DATE OF BIRTH</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowDatePicker(true);
+                }}
+                style={[
+                  styles.inputBlock,
+                  { justifyContent: "space-between" },
+                  focusedInput === "dob" && styles.inputBlockFocused,
+                ]}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Calendar size={18} color={focusedInput === "dob" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
+                  <Text style={styles.dateValue}>
+                    {dateOfBirth.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </Text>
+                </View>
+                <ChevronDown size={14} color="#94a3b8" />
+              </TouchableOpacity>
 
               
               <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
@@ -618,8 +769,68 @@ export function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             </View>
           )}
 
+          {mode === "verifyEmail" && (
+            <View style={[styles.formContainer, { justifyContent: "center", alignItems: "center", width: "100%" }]}>
+              <View style={[styles.successWrapper, { width: "100%", alignItems: "center" }]}>
+                <View style={styles.successBadge}>
+                  <Mail size={36} color="#10B981" />
+                </View>
+                <Text style={[styles.headline, { textAlign: "center" }]}>Verify Your Email</Text>
+                <Text style={[styles.successMessage, { textAlign: "center", width: "100%" }]}>
+                  We've sent a verification link to your email address:{"\n"}
+                  <Text style={{ fontWeight: "700", color: "#0f172a" }}>
+                    {auth.currentUser?.email || email}
+                  </Text>{"\n\n"}
+                  Please open the link in your email inbox to verify your account, then click the button below.
+                </Text>
+
+                <AnimatedButton disabled={loading} onPress={checkVerification} style={[styles.btnWrapper, { marginTop: 24, width: "100%" }]}>
+                  <LinearGradient colors={["#10B981", "#059669"]} style={styles.btn}>
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.btnText}>I Have Verified My Email</Text>
+                    )}
+                  </LinearGradient>
+                </AnimatedButton>
+
+                <TouchableOpacity 
+                  disabled={loading} 
+                  onPress={resendVerification} 
+                  style={{ marginTop: 12, paddingVertical: 10, width: "100%", alignItems: "center" }}
+                >
+                  <Text style={{ color: "#10B981", fontWeight: "700", fontSize: 13, textAlign: "center" }}>
+                    Resend Verification Link
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  disabled={loading} 
+                  onPress={handleBackToLogin} 
+                  style={{ marginTop: 6, paddingVertical: 10, width: "100%", alignItems: "center" }}
+                >
+                  <Text style={{ color: "#ef4444", fontWeight: "700", fontSize: 13, textAlign: "center" }}>
+                    Back to Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <DatePickerModal
+        visible={showDatePicker}
+        date={dateOfBirth}
+        onConfirm={(date) => {
+          setDateOfBirth(date);
+          setShowDatePicker(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+        title="Select Date of Birth"
+      />
     </SafeAreaView>
   );
 }
@@ -941,6 +1152,23 @@ const styles = StyleSheet.create({
   googleBtnText: {
     fontSize: 14,
     color: "#334155",
+    fontWeight: "700",
+  },
+  dateValue: {
+    fontSize: 14,
+    color: "#0f172a",
+    fontWeight: "700",
+  },
+  datePickerDoneButton: {
+    backgroundColor: "#10B981",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  datePickerDoneText: {
+    fontSize: 14,
+    color: "#ffffff",
     fontWeight: "700",
   },
 });

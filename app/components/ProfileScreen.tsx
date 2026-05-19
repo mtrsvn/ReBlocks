@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -30,9 +30,11 @@ import {
   Plus,
   Building2,
   Moon,
+  Calendar,
 } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
+import { DatePickerModal } from "./DatePickerModal";
 import { useApp } from "../context";
 import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
@@ -44,12 +46,25 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onLogout }: ProfileScreenProps) {
-  const { fundingSources, defaultCurrency, setDefaultCurrency } = useApp();
+  const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile } = useApp();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [biometric, setBiometric] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // States for Didit modal
+  const [showDiditModal, setShowDiditModal] = useState(false);
+  const [diditLoading, setDiditLoading] = useState(false);
+
+  // Profile data values loaded from userProfile
+  const name = userProfile?.fullName || "Carlos Mendoza";
+  const address = userProfile?.address || "123 Metro Manila, Philippines";
+  const birthday = userProfile?.birthday || "1995-10-12";
+  const phone = userProfile?.phone || "+63 912 345 6789";
+  const email = userProfile?.email || "carlos.mendoza@email.com";
+  const isVerified = userProfile?.isVerified || false;
+  const kycStatus = userProfile?.kycStatus || "pending";
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -112,7 +127,6 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [notifications, setNotifications] = useState(true);
   const [twoFactor, setTwoFactor] = useState(true);
 
-  
   const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
@@ -120,27 +134,36 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
 
-  
-  const [name, setName] = useState("Carlos Mendoza");
-  const [address, setAddress] = useState("123 Metro Manila, Philippines");
-  const [birthday, setBirthday] = useState("1995-10-12");
-
-  const [phone, setPhone] = useState("+63 912 345 6789");
-  const [email, setEmail] = useState("carlos.mendoza@email.com");
-
-  
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [pinSuccess, setPinSuccess] = useState(false);
 
-  
-  const [tempName, setTempName] = useState("Carlos Mendoza");
-  const [tempAddress, setTempAddress] = useState("123 Metro Manila, Philippines");
-  const [tempBirthday, setTempBirthday] = useState("1995-10-12");
-  const [tempPhone, setTempPhone] = useState("+63 912 345 6789");
-  const [tempEmail, setTempEmail] = useState("carlos.mendoza@email.com");
+  const [tempName, setTempName] = useState(name);
+  const [tempBirthdayDate, setTempBirthdayDate] = useState(() => {
+    try {
+      return birthday ? new Date(birthday) : new Date(1995, 9, 12);
+    } catch {
+      return new Date(1995, 9, 12);
+    }
+  });
+  const [showBirthdayPicker, setShowBirthdayPicker] = useState(false);
+  const [tempPhone, setTempPhone] = useState(phone);
+  const [tempEmail, setTempEmail] = useState(email);
+
+  useEffect(() => {
+    if (userProfile) {
+      setTempName(userProfile.fullName || "");
+      try {
+        setTempBirthdayDate(userProfile.birthday ? new Date(userProfile.birthday) : new Date(1995, 9, 12));
+      } catch {
+        setTempBirthdayDate(new Date(1995, 9, 12));
+      }
+      setTempPhone(userProfile.phone || "");
+      setTempEmail(userProfile.email || "");
+    }
+  }, [userProfile]);
 
   const settingSections: {
     title: string;
@@ -166,8 +189,11 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           color: "#10B981",
           onPress: () => {
             setTempName(name);
-            setTempAddress(address);
-            setTempBirthday(birthday);
+            try {
+              setTempBirthdayDate(birthday ? new Date(birthday) : new Date(1995, 9, 12));
+            } catch {
+              setTempBirthdayDate(new Date(1995, 9, 12));
+            }
             setShowPersonalInfo(true);
           },
         },
@@ -353,9 +379,11 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
               <Text style={styles.profileName}>{name}</Text>
               <Text style={styles.profileEmail}>{email}</Text>
               <View style={styles.badgeRow}>
-                <View style={styles.verifiedBadge}>
-                  <CheckCircle size={10} color="#48bb78" style={{ marginRight: 3 }} />
-                  <Text style={styles.verifiedText}>VERIFIED</Text>
+                <View style={[styles.verifiedBadge, !isVerified && { backgroundColor: "rgba(239, 68, 68, 0.1)" }]}>
+                  <CheckCircle size={10} color={isVerified ? "#48bb78" : "#ef4444"} style={{ marginRight: 3 }} />
+                  <Text style={[styles.verifiedText, !isVerified && { color: "#ef4444" }]}>
+                    {isVerified ? "VERIFIED" : "UNVERIFIED"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -380,21 +408,35 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         </View>
 
         
-        <LinearGradient
-          colors={["#10B981", "#059669"]}
-          style={styles.kycBanner}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowDiditModal(true);
+          }}
         >
-          <View style={styles.kycIconWrapper}>
-            <Shield size={18} color="#ffffff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.kycTitle}>KYC Verification</Text>
-            <Text style={styles.kycSub}>Identity fully verified · Unlimited transfers</Text>
-          </View>
-          <View style={styles.kycBadge}>
-            <Text style={styles.kycBadgeText}>✓ Done</Text>
-          </View>
-        </LinearGradient>
+          <LinearGradient
+            colors={isVerified ? ["#10B981", "#059669"] : ["#ef4444", "#dc2626"]}
+            style={styles.kycBanner}
+          >
+            <View style={styles.kycIconWrapper}>
+              <Shield size={18} color="#ffffff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.kycTitle}>DIDIT Identity Verification</Text>
+              <Text style={styles.kycSub}>
+                {isVerified 
+                  ? "Identity fully verified · Unlimited transfers" 
+                  : "Tap to verify your ID using Didit KYC Protocol"}
+              </Text>
+            </View>
+            <View style={styles.kycBadge}>
+              <Text style={styles.kycBadgeText}>
+                {isVerified ? "✓ Verified" : "⚠️ Start"}
+              </Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
 
         
         <View style={{ marginBottom: 20 }}>
@@ -557,37 +599,39 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
             />
           </View>
           <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>DELIVERY ADDRESS</Text>
-            <TextInput
-              value={tempAddress}
-              onChangeText={setTempAddress}
-              style={styles.modalInput}
-              placeholder="Address"
-              placeholderTextColor="#9aa3b5"
-            />
+            <Text style={styles.modalLabel}>DATE OF BIRTH</Text>
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowBirthdayPicker(true);
+              }}
+              style={styles.modalDatePickerButton}
+            >
+              <Calendar size={16} color="#10B981" style={{ marginRight: 8 }} />
+              <Text style={styles.modalDatePickerText}>
+                {tempBirthdayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>DATE OF BIRTH (YYYY-MM-DD)</Text>
-            <TextInput
-              value={tempBirthday}
-              onChangeText={setTempBirthday}
-              style={styles.modalInput}
-              placeholder="Birthday"
-              placeholderTextColor="#9aa3b5"
-            />
-          </View>
+
           <TouchableOpacity
             style={styles.modalSaveBtnWrapper}
-            onPress={() => {
+            onPress={async () => {
               if (!tempName.trim()) {
                 Alert.alert("Error", "Name cannot be empty.");
                 return;
               }
-              setName(tempName);
-              setAddress(tempAddress);
-              setBirthday(tempBirthday);
-              setShowPersonalInfo(false);
-              Alert.alert("Success", "Personal Information updated successfully!");
+              try {
+                const dobFormatted = tempBirthdayDate.toISOString().split('T')[0];
+                await updateUserProfile({
+                  fullName: tempName,
+                  birthday: dobFormatted,
+                });
+                setShowPersonalInfo(false);
+                Alert.alert("Success", "Personal Information updated successfully!");
+              } catch (e: any) {
+                Alert.alert("Update Failed", e.message || "Failed to update profile.");
+              }
             }}
           >
             <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
@@ -596,6 +640,18 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </TouchableOpacity>
         </View>
       </BottomSheet>
+
+      <DatePickerModal
+        visible={showBirthdayPicker}
+        date={tempBirthdayDate}
+        onConfirm={(date) => {
+          setTempBirthdayDate(date);
+          setShowBirthdayPicker(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
+        onCancel={() => setShowBirthdayPicker(false)}
+        title="Select Date of Birth"
+      />
 
       <BottomSheet
         isOpen={showPhone}
@@ -616,14 +672,18 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
           <TouchableOpacity
             style={styles.modalSaveBtnWrapper}
-            onPress={() => {
+            onPress={async () => {
               if (!tempPhone.trim()) {
                 Alert.alert("Error", "Phone number cannot be empty.");
                 return;
               }
-              setPhone(tempPhone);
-              setShowPhone(false);
-              Alert.alert("Success", "Phone number updated successfully!");
+              try {
+                await updateUserProfile({ phone: tempPhone });
+                setShowPhone(false);
+                Alert.alert("Success", "Phone number updated successfully!");
+              } catch (e: any) {
+                Alert.alert("Update Failed", e.message || "Failed to update phone number.");
+              }
             }}
           >
             <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
@@ -653,14 +713,18 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
           <TouchableOpacity
             style={styles.modalSaveBtnWrapper}
-            onPress={() => {
+            onPress={async () => {
               if (!tempEmail.trim() || !tempEmail.includes("@")) {
                 Alert.alert("Error", "Please enter a valid email address.");
                 return;
               }
-              setEmail(tempEmail);
-              setShowEmail(false);
-              Alert.alert("Success", "Email address updated successfully!");
+              try {
+                await updateUserProfile({ email: tempEmail });
+                setShowEmail(false);
+                Alert.alert("Success", "Email address updated successfully!");
+              } catch (e: any) {
+                Alert.alert("Update Failed", e.message || "Failed to update email.");
+              }
             }}
           >
             <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
@@ -819,6 +883,85 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
                 <Text style={styles.faqAnswer}>{faq.a}</Text>
               </View>
             ))}
+          </View>
+        </ScrollView>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={showDiditModal}
+        onClose={() => setShowDiditModal(false)}
+        title="Didit ID Verification"
+      >
+        <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={false}>
+          <View style={{ paddingBottom: 24, gap: 16 }}>
+            {isVerified ? (
+              <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                <CheckCircle size={48} color="#10B981" style={{ marginBottom: 12 }} />
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#0f172a" }}>Identity Fully Verified</Text>
+                <Text style={{ fontSize: 12, color: "#64748b", marginTop: 4, textAlign: "center", lineHeight: 18 }}>
+                  Thank you! Your identity has been successfully verified via Didit's decentralized compliance network.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 14 }}>
+                <Text style={{ fontSize: 13, color: "#475569", lineHeight: 20 }}>
+                  Verify your identity in seconds using <Text style={{ fontWeight: "700", color: "#10B981" }}>Didit decentralized KYC Protocol</Text>.
+                </Text>
+
+                <View style={{ backgroundColor: "#f8fafc", borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#10B981" }}>
+                  <Text style={{ fontWeight: "700", fontSize: 12, color: "#1e293b", marginBottom: 4 }}>How It Works</Text>
+                  <Text style={{ fontSize: 11, color: "#475569", lineHeight: 16 }}>
+                    1. Secure KYC: Fully decentralized and end-to-end encrypted identity protocol.{"\n"}
+                    2. Biometric Scan: Quick face verification matched against your ID.{"\n"}
+                    3. Ultimate Privacy: You own your identity credentials. Revoke permission at any time.
+                  </Text>
+                </View>
+
+                <View style={{ backgroundColor: "rgba(16, 185, 129, 0.05)", borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#10B981" }}>
+                  <Text style={{ fontWeight: "700", fontSize: 12, color: "#065f46", marginBottom: 4 }}>Requirements to make Didit live:</Text>
+                  <Text style={{ fontSize: 11, color: "#065f46", lineHeight: 16 }}>
+                    • Didit Developer Client ID & Client Secret credentials.{"\n"}
+                    • Mobile SDK/WebView setup to present the identity capture screens.{"\n"}
+                    • Backend webhook handler (e.g. Firebase Cloud Function) to receive verified status updates.
+                  </Text>
+                </View>
+
+                <Text style={{ fontSize: 12, fontStyle: "italic", color: "#94a3b8", textAlign: "center" }}>
+                  For now, we have simulated the Didit integration! You can tap below to instantly verify your profile.
+                </Text>
+
+                <TouchableOpacity
+                  style={{ width: "100%", height: 48, borderRadius: 12, overflow: "hidden" }}
+                  onPress={async () => {
+                    setDiditLoading(true);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setTimeout(async () => {
+                      try {
+                        await updateUserProfile({ 
+                          isVerified: true, 
+                          KYCVerified: true, 
+                          kycStatus: "verified" 
+                        });
+                        setDiditLoading(false);
+                        setShowDiditModal(false);
+                        Alert.alert("KYC Completed", "Your account has been fully verified successfully!");
+                      } catch (error: any) {
+                        setDiditLoading(false);
+                        Alert.alert("Verification Error", error.message);
+                      }
+                    }, 2000);
+                  }}
+                >
+                  <LinearGradient colors={["#10B981", "#059669"]} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    {diditLoading ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>Simulate Didit KYC Scan</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </ScrollView>
       </BottomSheet>
@@ -1322,5 +1465,35 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
     zIndex: 999,
+  },
+  modalDatePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  modalDatePickerText: {
+    fontSize: 13,
+    color: "#2d3748",
+    fontWeight: "600",
+  },
+  datePickerDoneButton: {
+    backgroundColor: "#10B981",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  datePickerDoneText: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "700",
   },
 });
