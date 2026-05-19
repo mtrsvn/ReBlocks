@@ -157,7 +157,16 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     }
   };
 
-  const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];
+  const primarySource =
+    fundingSources.find((fs) => fs.id === activeFundingSourceId) ||
+    fundingSources[0] ||
+    {
+      id: "none",
+      name: "No funding source",
+      provider: "Connect a bank or card",
+      type: "bank",
+      accountNumber: "—",
+    };
 
   const unreadCount = notifications.filter((n) => !readIds.includes(n.id)).length;
 
@@ -328,34 +337,45 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             </TouchableOpacity>
           </View>
 
-          <View style={{ marginTop: 10 }}>
-            {transactions.slice(0, 3).map((tx) => (
-              <AnimatedButton
-                key={tx.id}
-                onPress={() => setSelectedTransaction(tx)}
-                style={styles.txRow}
-              >
-                <View style={styles.txIconWrapper}>
-                  <Send size={18} color="#ffffff" />
+          <View style={{ gap: 10 }}>
+            {transactions.length === 0 ? (
+              <View style={styles.flatCardRow}>
+                <View style={styles.methodIconWrapper}>
+                  <Send size={16} color="#10B981" />
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.txName} numberOfLines={1}>
-                    {tx.recipientName}
-                  </Text>
-                  <Text style={styles.txDate}>
-                    {new Date(tx.date).toLocaleDateString()}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.methodName}>No transfers yet</Text>
+                  <Text style={styles.methodSub}>Your recent activity will appear here</Text>
                 </View>
-                <View style={{ alignItems: "flex-end", gap: 3 }}>
-                  <Text style={styles.txAmt}>
-                    {curSymbol}{formatAmount(tx.amount, tx.currency)}
-                  </Text>
-                  <View style={styles.completedBadge}>
+                <ChevronRight size={16} color="#b0b8c8" />
+              </View>
+            ) : (
+              transactions.slice(0, 3).map((tx) => (
+                <AnimatedButton
+                  key={tx.id}
+                  onPress={() => setSelectedTransaction(tx)}
+                  style={styles.txRow}
+                >
+                  <View style={styles.txIconWrapper}>
+                    <Send size={18} color="#ffffff" />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.txName} numberOfLines={1}>
+                      {tx.recipientName}
+                    </Text>
+                    <Text style={styles.txDate}>
+                      {new Date(tx.date).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 3 }}>
+                    <Text style={styles.txAmt}>
+                      {curSymbol}{formatAmount(tx.amount, tx.currency)}
+                    </Text>
                     <Text style={styles.completedText}>COMPLETED</Text>
                   </View>
-                </View>
-              </AnimatedButton>
-            ))}
+                </AnimatedButton>
+              ))
+            )}
           </View>
         </View>
       </ScrollView>

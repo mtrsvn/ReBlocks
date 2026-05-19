@@ -112,11 +112,13 @@ export function AuthScreen({}: AuthScreenProps) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState(new Date(2000, 0, 1));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
@@ -213,13 +215,12 @@ export function AuthScreen({}: AuthScreenProps) {
         emailVerified: false,
         KYCVerified: false,
         isAdmin: false,
-        isVerified: false,
         kycStatus: 'pending',
         defaultCurrency: 'USD',
         createdAt: new Date().toISOString()
       });
 
-      // Clear signup form and go back to login
+      // Clear signup form and show verification screen
       setFullName("");
       setEmail("");
       setPhone("");
@@ -228,11 +229,11 @@ export function AuthScreen({}: AuthScreenProps) {
       setDateOfBirth(new Date(2000, 0, 1));
       setAgreeKYC(false);
       
-      switchMode("login");
+      setMode("verifyEmail");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         "Account Created!",
-        "Your account was created successfully. A verification link has been sent to your email. Please verify it when you try to log in.",
+        "Your account was created successfully. A verification link has been sent to your email. Please verify it to continue.",
       );
     } catch (error: any) {
       console.log("Signup error:", error);
@@ -361,19 +362,19 @@ export function AuthScreen({}: AuthScreenProps) {
                 <TextInput
                   placeholder="••••••••"
                   placeholderTextColor="#94a3b8"
-                  secureTextEntry={!showPassword}
+                  secureTextEntry={!showLoginPassword}
                   value={password}
                   onChangeText={setPassword}
                   onFocus={() => setFocusedInput("password")}
                   onBlur={() => setFocusedInput(null)}
                   style={styles.input}
                 />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
+                <AnimatedButton
+                  onPress={() => setShowLoginPassword(!showLoginPassword)}
                   style={styles.eyeButton}
                 >
-                  {showPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
-                </TouchableOpacity>
+                  {showLoginPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+                </AnimatedButton>
               </View>
 
               
@@ -429,7 +430,7 @@ export function AuthScreen({}: AuthScreenProps) {
           {mode === "signup" && (
             <View style={styles.formContainer}>
               <Text style={styles.headline}>Create account</Text>
-              <Text style={styles.subheadline}>Enter your details exactly as shown on your legal ID</Text>
+              <Text style={styles.subheadline}>Create your ReBlocks account in a few simple steps</Text>
 
               
               <Text style={styles.inputLabel}>FULL LEGAL NAME</Text>
@@ -622,13 +623,19 @@ export function AuthScreen({}: AuthScreenProps) {
                 <TextInput
                   placeholder="Minimum 8 characters"
                   placeholderTextColor="#94a3b8"
-                  secureTextEntry={!showPassword}
+                  secureTextEntry={!showSignupPassword}
                   value={password}
                   onChangeText={setPassword}
                   onFocus={() => setFocusedInput("pwd")}
                   onBlur={() => setFocusedInput(null)}
                   style={styles.input}
                 />
+                <AnimatedButton
+                  onPress={() => setShowSignupPassword(!showSignupPassword)}
+                  style={styles.eyeButton}
+                >
+                  {showSignupPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+                </AnimatedButton>
               </View>
 
               
@@ -643,13 +650,19 @@ export function AuthScreen({}: AuthScreenProps) {
                 <TextInput
                   placeholder="Repeat password"
                   placeholderTextColor="#94a3b8"
-                  secureTextEntry={!showPassword}
+                  secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   onFocus={() => setFocusedInput("confirmPwd")}
                   onBlur={() => setFocusedInput(null)}
                   style={styles.input}
                 />
+                <AnimatedButton
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeButton}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+                </AnimatedButton>
               </View>
 
               

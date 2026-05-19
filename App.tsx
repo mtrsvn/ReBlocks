@@ -63,7 +63,7 @@ function AppContent() {
     );
   }
 
-  if (!userProfile) {
+  if (!userProfile || !userProfile.emailVerified) {
     return (
       <View style={styles.appContainer}>
         <StatusBar style="dark" />
