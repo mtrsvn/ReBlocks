@@ -11,6 +11,7 @@ import {
   Share,
   SafeAreaView,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import {
   Send,
@@ -35,6 +36,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Transaction } from "../context";
 import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
+import * as Haptics from "expo-haptics";
 
 const COUNTRIES = [
   { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
@@ -136,6 +138,15 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     }
     setTimeout(() => {
       setRefreshing(false);
+    }, 1000);
+  }, []);
+
+  const [notifRefreshing, setNotifRefreshing] = useState(false);
+  const onNotifRefresh = React.useCallback(() => {
+    setNotifRefreshing(true);
+    setTimeout(() => {
+      setNotifRefreshing(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }, 1000);
   }, []);
 
@@ -356,6 +367,12 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         onRequestClose={() => setShowNotifications(false)}
       >
         <SafeAreaView style={styles.notifModalContainer}>
+          {notifRefreshing && (
+            <View style={styles.topRefreshContainer}>
+              <ActivityIndicator size="small" color="#10B981" />
+            </View>
+          )}
+
           <View style={styles.notifHeader}>
             <View>
               <Text style={styles.notifHeaderSubtitle}>INBOX</Text>
@@ -373,6 +390,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.notifScroll}
+            onScroll={(event) => {
+              const { contentOffset } = event.nativeEvent;
+              if (contentOffset.y <= -55 && !notifRefreshing) {
+                onNotifRefresh();
+              }
+            }}
+            scrollEventThrottle={16}
+            alwaysBounceVertical={true}
           >
             {notifications.map((n) => {
               const Icon = n.icon;

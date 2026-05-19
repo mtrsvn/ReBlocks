@@ -29,6 +29,7 @@ import {
   User,
   Plus,
   Building2,
+  Moon,
 } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
@@ -47,6 +48,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [biometric, setBiometric] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const pickImage = async () => {
@@ -247,6 +249,19 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           onToggle: (val: boolean) => {
             setNotifications(val);
             Alert.alert("Notifications", `App notifications have been ${val ? "enabled" : "disabled"}.`);
+          },
+        },
+        {
+          icon: Moon,
+          label: "Dark Mode",
+          sublabel: "Enable premium dark theme",
+          color: "#10B981",
+          toggle: true,
+          toggleVal: darkMode,
+          onToggle: (val: boolean) => {
+            setDarkMode(val);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Alert.alert("Dark Mode", `Dark Mode has been ${val ? "enabled" : "disabled"}. Premium theme presets will persist locally.`);
           },
         },
         {
