@@ -338,18 +338,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           </View>
 
           <View style={{ gap: 10 }}>
-            {transactions.length === 0 ? (
-              <View style={styles.flatCardRow}>
-                <View style={styles.methodIconWrapper}>
-                  <Send size={16} color="#10B981" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.methodName}>No transfers yet</Text>
-                  <Text style={styles.methodSub}>Your recent activity will appear here</Text>
-                </View>
-                <ChevronRight size={16} color="#b0b8c8" />
-              </View>
-            ) : (
+            {transactions.length > 0 &&
               transactions.slice(0, 3).map((tx) => (
                 <AnimatedButton
                   key={tx.id}
@@ -374,8 +363,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                     <Text style={styles.completedText}>COMPLETED</Text>
                   </View>
                 </AnimatedButton>
-              ))
-            )}
+              ))}
           </View>
         </View>
       </ScrollView>
