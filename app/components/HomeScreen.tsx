@@ -319,9 +319,8 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
 
           <View style={{ marginTop: 10 }}>
             {transactions.slice(0, 3).map((tx) => (
-              <TouchableOpacity
+              <AnimatedButton
                 key={tx.id}
-                activeOpacity={0.85}
                 onPress={() => setSelectedTransaction(tx)}
                 style={styles.txRow}
               >
@@ -344,7 +343,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                     <Text style={styles.completedText}>COMPLETED</Text>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </AnimatedButton>
             ))}
           </View>
         </View>

@@ -18,6 +18,7 @@ import { TransactionHistory } from "./app/components/TransactionHistory";
 import { ProfileScreen } from "./app/components/ProfileScreen";
 import { AIChatScreen } from "./app/components/AIChatScreen";
 import { AnimatedButton } from "./app/components/AnimatedButton";
+import { AuthScreen } from "./app/components/AuthScreen";
 
 type Screen = "home" | "send" | "beneficiaries" | "history" | "profile" | "ai-chat";
 
@@ -33,6 +34,7 @@ export default function App() {
 }
 
 function AppContent() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeScreen, setActiveScreen] = useState<Screen>("home");
   const [preselectedRecipient, setPreselectedRecipient] = useState<Recipient | null>(null);
 
@@ -40,6 +42,15 @@ function AppContent() {
     setPreselectedRecipient(recipient);
     setActiveScreen(screen);
   };
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.appContainer}>
+        <StatusBar style="dark" />
+        <AuthScreen onLoginSuccess={() => setIsAuthenticated(true)} />
+      </View>
+    );
+  }
 
   const showNav = !HIDE_NAV.includes(activeScreen);
   const showFab = !HIDE_FAB.includes(activeScreen);
@@ -68,7 +79,7 @@ function AppContent() {
             />
           )}
           {activeScreen === "history" && <TransactionHistory />}
-          {activeScreen === "profile" && <ProfileScreen />}
+          {activeScreen === "profile" && <ProfileScreen onLogout={() => { setIsAuthenticated(false); navigate("home"); }} />}
           {activeScreen === "ai-chat" && (
             <AIChatScreen onBack={() => navigate("home")} />
           )}

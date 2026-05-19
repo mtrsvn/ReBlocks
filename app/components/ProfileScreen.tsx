@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import {
   ChevronRight,
@@ -34,11 +35,64 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useApp } from "../context";
 import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 
-export function ProfileScreen() {
+interface ProfileScreenProps {
+  onLogout?: () => void;
+}
+
+export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const { fundingSources, defaultCurrency, setDefaultCurrency } = useApp();
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [biometric, setBiometric] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "We need media library permissions to upload your profile photo.");
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets[0].uri) {
+        setProfileImage(result.assets[0].uri);
+        setShowPhotoPicker(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not pick image. Please try again.");
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "We need camera permissions to take a photo.");
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets[0].uri) {
+        setProfileImage(result.assets[0].uri);
+        setShowPhotoPicker(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not take photo. Please try again.");
+    }
+  };
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -249,12 +303,26 @@ export function ProfileScreen() {
           <View style={styles.profileHeaderRow}>
             {/* Avatar */}
             <View style={{ position: "relative" }}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
-              </View>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowPhotoPicker(true);
+                }}
+                style={styles.avatarCircle}
+              >
+                {profileImage ? (
+                  <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
+                )}
+              </TouchableOpacity>
               <AnimatedButton
                 style={styles.cameraBtnWrapper}
-                onPress={() => Alert.alert("Camera", "Profile photo upload coming soon!")}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowPhotoPicker(true);
+                }}
               >
                 <LinearGradient
                   colors={["#10B981", "#059669"]}
@@ -442,7 +510,9 @@ export function ProfileScreen() {
           onPress={() => {
             Alert.alert("Sign Out", "Are you sure you want to sign out?", [
               { text: "Cancel", style: "cancel" },
-              { text: "Sign Out", style: "destructive", onPress: () => Alert.alert("Success", "Signed out successfully!") }
+              { text: "Sign Out", style: "destructive", onPress: () => {
+                if (onLogout) onLogout();
+              }}
             ]);
           }}
         >
@@ -451,7 +521,7 @@ export function ProfileScreen() {
         </AnimatedButton>
 
         {/* App Version */}
-        <Text style={styles.versionText}>v2.4.1 · Powered by AI</Text>
+        <Text style={styles.versionText}>v0.1.0-dev · ReBlocks Development Phase</Text>
       </ScrollView>
 
       {/* BottomSheets for Settings */}
@@ -737,6 +807,75 @@ export function ProfileScreen() {
           </View>
         </ScrollView>
       </BottomSheet>
+
+      <BottomSheet
+        isOpen={showPhotoPicker}
+        onClose={() => setShowPhotoPicker(false)}
+        title="Upload Profile Photo"
+      >
+        <View style={{ paddingBottom: 24, gap: 18 }}>
+          {/* Action Row */}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={takePhoto}
+              style={{
+                flex: 1,
+                backgroundColor: "#f1f5f9",
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1.5,
+                borderColor: "#e2e8f0",
+              }}
+            >
+              <Camera size={20} color="#10B981" />
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#334155", marginTop: 6 }}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={pickImage}
+              style={{
+                flex: 1,
+                backgroundColor: "#f1f5f9",
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1.5,
+                borderColor: "#e2e8f0",
+              }}
+            >
+              <Plus size={20} color="#10B981" />
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#334155", marginTop: 6 }}>Choose Library</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Remove Current Photo */}
+          {profileImage && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                setProfileImage(null);
+                setShowPhotoPicker(false);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+              style={{
+                backgroundColor: "rgba(239, 68, 68, 0.08)",
+                borderRadius: 12,
+                paddingVertical: 10,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 6,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#ef4444" }}>Remove Photo</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -786,14 +925,22 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#10B981",
+    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: "#cbd5e1",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitials: {
-    color: "#ffffff",
-    fontSize: 22,
+    color: "#10B981",
+    fontSize: 20,
     fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 30,
   },
   cameraBtnWrapper: {
     position: "absolute",
