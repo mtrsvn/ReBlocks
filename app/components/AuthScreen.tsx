@@ -217,7 +217,13 @@ export function AuthScreen({}: AuthScreenProps) {
         isAdmin: false,
         kycStatus: 'pending',
         defaultCurrency: 'USD',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        pin: false,
+        userPin: null,
+        pinsetup: null,
+        pinAttempt: 0,
+        isLocked: false,
+        lockedUntil: null
       });
 
       // Clear signup form and show verification screen

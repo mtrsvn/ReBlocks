@@ -66,6 +66,12 @@ export interface UserProfile {
   isVerified: boolean;
   kycStatus: 'pending' | 'verified' | 'failed';
   defaultCurrency: 'USD' | 'PHP';
+  pin?: boolean;
+  userPin?: number;
+  pinsetup?: string | null;
+  pinAttempt?: number;
+  isLocked?: boolean;
+  lockedUntil?: string | null;
 }
 
 interface AppContextType {

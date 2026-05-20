@@ -20,6 +20,7 @@ import { ProfileScreen } from "./app/components/ProfileScreen";
 import { AIChatScreen } from "./app/components/AIChatScreen";
 import { AnimatedButton } from "./app/components/AnimatedButton";
 import { AuthScreen } from "./app/components/AuthScreen";
+import { PinEntryScreen } from "./app/components/PinEntryScreen";
 import { auth } from "./app/firebase";
 import { signOut } from "firebase/auth";
 
@@ -40,6 +41,16 @@ function AppContent() {
   const { userProfile, isAuthLoading } = useApp();
   const [activeScreen, setActiveScreen] = useState<Screen>("home");
   const [preselectedRecipient, setPreselectedRecipient] = useState<Recipient | null>(null);
+  const [pinUnlocked, setPinUnlocked] = useState(false);
+  const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
+
+  React.useEffect(() => {
+    if (!userProfile) {
+      setPinUnlocked(false);
+    } else if (!userProfile.pin) {
+      setPinUnlocked(true);
+    }
+  }, [userProfile]);
 
   const navigate = (screen: Screen, recipient: Recipient | null = null) => {
     setPreselectedRecipient(recipient);
@@ -72,8 +83,20 @@ function AppContent() {
     );
   }
 
-  const showNav = !HIDE_NAV.includes(activeScreen);
-  const showFab = !HIDE_FAB.includes(activeScreen);
+  if (userProfile.pin && !pinUnlocked) {
+    return (
+      <View style={styles.appContainer}>
+        <StatusBar style="dark" />
+        <PinEntryScreen 
+          onUnlock={() => setPinUnlocked(true)} 
+          onLogout={handleLogout} 
+        />
+      </View>
+    );
+  }
+
+  const showNav = !HIDE_NAV.includes(activeScreen) && !showPinRemovalEntry;
+  const showFab = !HIDE_FAB.includes(activeScreen) && !showPinRemovalEntry;
 
   return (
     <View style={styles.appContainer}>
@@ -99,7 +122,7 @@ function AppContent() {
             />
           )}
           {activeScreen === "history" && <TransactionHistory />}
-          {activeScreen === "profile" && <ProfileScreen onLogout={handleLogout} />}
+          {activeScreen === "profile" && <ProfileScreen onLogout={handleLogout} onPinRemovalShow={setShowPinRemovalEntry} />}
           {activeScreen === "ai-chat" && (
             <AIChatScreen onBack={() => navigate("home")} />
           )}

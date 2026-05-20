@@ -9,6 +9,8 @@ import {
   Dimensions,
   Animated,
   Easing,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { X } from "lucide-react-native";
 
@@ -74,7 +76,10 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
       onRequestClose={handleDismiss}
       animationType="none"
     >
-      <View style={styles.modalContainer}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.modalContainer}
+      >
         
         <Animated.View
           style={[
@@ -123,7 +128,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
             {children}
           </ScrollView>
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

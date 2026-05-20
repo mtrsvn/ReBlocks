@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ChevronRight,
   Shield,
@@ -35,13 +36,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useApp } from "../context";
 import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
+import { PinEntryScreen } from "./PinEntryScreen";
 import * as Haptics from "expo-haptics";
 
 interface ProfileScreenProps {
   onLogout?: () => void;
+  onPinRemovalShow?: (show: boolean) => void;
 }
 
-export function ProfileScreen({ onLogout }: ProfileScreenProps) {
+export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps) {
   const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile } = useApp();
   const [biometric, setBiometric] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -50,6 +53,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   // States for Didit modal
   const [showDiditModal, setShowDiditModal] = useState(false);
   const [diditLoading, setDiditLoading] = useState(false);
+  const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
 
   // Profile data values loaded from userProfile
   const name = userProfile?.fullName || "Carlos Mendoza";
@@ -59,6 +63,19 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
   const email = userProfile?.email || "carlos.mendoza@email.com";
   const isVerified = userProfile?.isVerified || false;
   const kycStatus = userProfile?.kycStatus || "pending";
+  
+  const hasPin = userProfile?.pin || false;
+  const pinSetupAt = userProfile?.pinsetup || null;
+
+  let pinSublabel = "Enhance your security";
+  if (hasPin) {
+    if (pinSetupAt) {
+      const days = Math.floor((new Date().getTime() - new Date(pinSetupAt).getTime()) / (1000 * 3600 * 24));
+      pinSublabel = `Last changed ${days} day${days !== 1 ? 's' : ''} ago`;
+    } else {
+      pinSublabel = "PIN is active";
+    }
+  }
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -172,8 +189,8 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
       items: [
         {
           icon: Lock,
-          label: "Change PIN",
-          sublabel: "Last changed 30 days ago",
+          label: hasPin ? "Change PIN" : "Setup your PIN",
+          sublabel: pinSublabel,
           color: "#10B981",
           onPress: () => {
             setCurrentPin("");
@@ -531,10 +548,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
         onClose={() => setShowPhone(false)}
         title="Update Phone Number"
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-        >
+
           <View style={styles.modalForm}>
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalLabel}>NEW PHONE NUMBER</Text>
@@ -568,7 +582,7 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+
       </BottomSheet>
 
       <BottomSheet
@@ -622,30 +636,52 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           setPinError("");
           setPinSuccess(false);
         }}
-        title="Change Security PIN"
+        title={hasPin ? "Change Security PIN" : "Setup Security PIN"}
       >
         <View style={styles.modalForm}>
           {pinSuccess ? (
-            <View style={{ alignItems: "center", paddingVertical: 20 }}>
-              <CheckCircle size={40} color="#10B981" style={{ marginBottom: 12 }} />
-              <Text style={{ fontSize: 15, fontWeight: "800", color: "#2d3748" }}>PIN Changed Successfully!</Text>
-              <Text style={{ fontSize: 11, color: "#9aa3b5", marginTop: 4, textAlign: "center" }}>Your security PIN is updated and active.</Text>
+            <View style={{ paddingVertical: 20 }}>
+              <View style={{ alignItems: "center", marginBottom: 20 }}>
+                <CheckCircle size={40} color="#10B981" style={{ marginBottom: 12 }} />
+                <Text style={{ fontSize: 15, fontWeight: "800", color: "#2d3748" }}>
+                  {hasPin ? "PIN Changed Successfully!" : "PIN Setup Successfully!"}
+                </Text>
+                <Text style={{ fontSize: 11, color: "#9aa3b5", marginTop: 4, textAlign: "center" }}>
+                  Your security PIN is updated and active.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalSaveBtnWrapper}
+                onPress={() => {
+                  setShowPin(false);
+                  setCurrentPin("");
+                  setNewPin("");
+                  setConfirmPin("");
+                  setPinSuccess(false);
+                }}
+              >
+                <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+                  <Text style={styles.modalSaveBtnText}>Done</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           ) : (
             <>
-              <View style={styles.modalInputGroup}>
-                <Text style={styles.modalLabel}>CURRENT PIN</Text>
-                <TextInput
-                  value={currentPin}
-                  onChangeText={setCurrentPin}
-                  style={styles.modalInput}
-                  placeholder="••••"
-                  placeholderTextColor="#9aa3b5"
-                  keyboardType="numeric"
-                  secureTextEntry
-                  maxLength={4}
-                />
-              </View>
+              {hasPin && (
+                <View style={styles.modalInputGroup}>
+                  <Text style={styles.modalLabel}>CURRENT PIN</Text>
+                  <TextInput
+                    value={currentPin}
+                    onChangeText={setCurrentPin}
+                    style={styles.modalInput}
+                    placeholder="••••"
+                    placeholderTextColor="#9aa3b5"
+                    keyboardType="numeric"
+                    secureTextEntry
+                    maxLength={4}
+                  />
+                </View>
+              )}
               <View style={styles.modalInputGroup}>
                 <Text style={styles.modalLabel}>NEW PIN</Text>
                 <TextInput
@@ -677,31 +713,53 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
               )}
               <TouchableOpacity
                 style={styles.modalSaveBtnWrapper}
-                onPress={() => {
-                  if (currentPin.length < 4 || newPin.length < 4 || confirmPin.length < 4) {
-                    setPinError("PIN must be exactly 4 digits.");
+                onPress={async () => {
+                  if (hasPin && currentPin.length < 4) {
+                    setPinError("Current PIN must be exactly 4 digits.");
+                    return;
+                  }
+                  if (newPin.length < 4 || confirmPin.length < 4) {
+                    setPinError("New PIN must be exactly 4 digits.");
                     return;
                   }
                   if (newPin !== confirmPin) {
                     setPinError("New PINs do not match.");
                     return;
                   }
-                  setPinError("");
-                  setPinSuccess(true);
-                  setTimeout(() => {
-                    setShowPin(false);
-                    setCurrentPin("");
-                    setNewPin("");
-                    setConfirmPin("");
-                    setPinSuccess(false);
-                    Alert.alert("Success", "Security PIN changed successfully!");
-                  }, 1500);
+                  
+                  try {
+                    await AsyncStorage.setItem("user_pin", newPin);
+                    await updateUserProfile({
+                      pin: true,
+                      userPin: parseInt(newPin),
+                      pinsetup: new Date().toISOString()
+                    });
+                    setPinError("");
+                    setPinSuccess(true);
+                  } catch (e: any) {
+                    setPinError(e.message || "Failed to save PIN.");
+                  }
                 }}
               >
                 <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
-                  <Text style={styles.modalSaveBtnText}>Save New PIN</Text>
+                  <Text style={styles.modalSaveBtnText}>{hasPin ? "Update PIN" : "Save PIN"}</Text>
                 </LinearGradient>
               </TouchableOpacity>
+
+              {hasPin && (
+                <TouchableOpacity
+                  style={styles.modalRemoveBtnWrapper}
+                  onPress={() => {
+                    setShowPinRemovalEntry(true);
+                    onPinRemovalShow?.(true);
+                    setShowPin(false);
+                    setCurrentPin("");
+                    setPinError("");
+                  }}
+                >
+                  <Text style={styles.modalRemoveBtnText}>Remove PIN</Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -843,6 +901,39 @@ export function ProfileScreen({ onLogout }: ProfileScreenProps) {
           </View>
         </ScrollView>
       </BottomSheet>
+
+      {showPinRemovalEntry && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
+          <PinEntryScreen
+            forRemoval={true}
+            onUnlock={async () => {
+              try {
+                await AsyncStorage.removeItem("user_pin");
+                await updateUserProfile({
+                  pin: false,
+                  userPin: null,
+                  pinsetup: null
+                });
+                setShowPinRemovalEntry(false);
+                onPinRemovalShow?.(false);
+                setShowPin(false);
+                setCurrentPin("");
+                setNewPin("");
+                setConfirmPin("");
+                Alert.alert("Success", "Your PIN has been removed successfully!");
+              } catch (e: any) {
+                Alert.alert("Error", e.message || "Failed to remove PIN.");
+              }
+            }}
+            onLogout={() => {
+              setShowPinRemovalEntry(false);
+              onPinRemovalShow?.(false);
+              setShowPin(true);
+              setCurrentPin("");
+            }}
+          />
+        </View>
+      )}
 
     </View>
   );
@@ -1269,6 +1360,46 @@ const styles = StyleSheet.create({
     color: "#718096",
     lineHeight: 16,
     fontWeight: "500",
+  },
+  modalRemoveBtnWrapper: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  modalRemoveBtnText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+    fontWeight: "700",
+    paddingVertical: 12,
+  },
+  modalCancelBtnWrapper: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  modalCancelBtnText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+    fontWeight: "700",
+    paddingVertical: 12,
+  },
+  modalBackBtnWrapper: {
+    marginTop: 8,
+  },
+  modalBackBtnText: {
+    textAlign: "center",
+    color: "#9aa3b5",
+    fontSize: 13,
+    fontWeight: "700",
+    paddingVertical: 12,
   },
   topRefreshContainer: {
     position: "absolute",
