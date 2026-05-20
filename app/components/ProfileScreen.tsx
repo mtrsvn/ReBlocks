@@ -115,7 +115,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
     }
   });
   const [tempPhone, setTempPhone] = useState(phone);
-  const [tempEmail, setTempEmail] = useState(email);
 
   useEffect(() => {
     if (userProfile) {
@@ -126,7 +125,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         setTempBirthdayDate(new Date(1995, 9, 12));
       }
       setTempPhone(userProfile.phone || "");
-      setTempEmail(userProfile.email || "");
     }
   }, [userProfile]);
 
@@ -178,7 +176,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           sublabel: email,
           color: "#10B981",
           onPress: () => {
-            setTempEmail(email);
             setShowEmail(true);
           },
         },
@@ -544,6 +541,21 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       </BottomSheet>
 
       <BottomSheet
+        isOpen={showEmail}
+        onClose={() => setShowEmail(false)}
+        title="Email Address"
+      >
+        <View style={styles.modalForm}>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>EMAIL ADDRESS</Text>
+            <View style={styles.modalValueBox}>
+              <Text style={styles.modalValueText}>{email}</Text>
+            </View>
+          </View>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
         isOpen={showPhone}
         onClose={() => setShowPhone(false)}
         title="Update Phone Number"
@@ -583,47 +595,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             </TouchableOpacity>
           </View>
 
-      </BottomSheet>
-
-      <BottomSheet
-        isOpen={showEmail}
-        onClose={() => setShowEmail(false)}
-        title="Update Email Address"
-      >
-        <View style={styles.modalForm}>
-          <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>NEW EMAIL ADDRESS</Text>
-            <TextInput
-              value={tempEmail}
-              onChangeText={setTempEmail}
-              style={styles.modalInput}
-              placeholder="carlos.mendoza@email.com"
-              placeholderTextColor="#9aa3b5"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.modalSaveBtnWrapper}
-            onPress={async () => {
-              if (!tempEmail.trim() || !tempEmail.includes("@")) {
-                Alert.alert("Error", "Please enter a valid email address.");
-                return;
-              }
-              try {
-                await updateUserProfile({ email: tempEmail });
-                setShowEmail(false);
-                Alert.alert("Success", "Email address updated successfully!");
-              } catch (e: any) {
-                Alert.alert("Update Failed", e.message || "Failed to update email.");
-              }
-            }}
-          >
-            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
-              <Text style={styles.modalSaveBtnText}>Update Email</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
       </BottomSheet>
 
       <BottomSheet
