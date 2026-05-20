@@ -24,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedButton } from "./AnimatedButton";
+import { useTheme } from "../context";
 
 
 
@@ -178,13 +179,14 @@ function parseIntent(text: string): Intent {
 
 
 function FormattedText({ text }: { text: string }) {
+  const theme = useTheme();
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return (
-    <Text style={{ color: "#4a5568", fontSize: 13, lineHeight: 18 }}>
+    <Text style={{ color: theme.textSecondary, fontSize: 13, lineHeight: 18 }}>
       {parts.map((part, i) => {
         if (part.startsWith("**") && part.endsWith("**")) {
           return (
-            <Text key={i} style={{ color: "#2d3748", fontWeight: "800" }}>
+            <Text key={i} style={{ color: theme.text, fontWeight: "800" }}>
               {part.slice(2, -2)}
             </Text>
           );
@@ -207,60 +209,61 @@ function ConfirmationCard({
   onSendAgain: (txn: TxnData) => void;
 }) {
   const { txn, status, txnId } = message;
+  const theme = useTheme();
   return (
     <View style={styles.botContainer}>
       <View style={styles.botAvatar}>
         <Bot size={13} color="white" />
       </View>
-      <View style={styles.confirmCard}>
-        <View style={styles.cardHeader}>
+      <View style={[styles.confirmCard, { backgroundColor: theme.surface }]}>
+        <View style={[styles.cardHeader, { borderBottomColor: theme.border }]}>
           <Text style={styles.cardHeaderTitle}>CONFIRM TRANSFER</Text>
         </View>
 
         <View style={styles.cardContent}>
           
           <View style={styles.recipientRow}>
-            <View style={styles.flagBadge}>
+            <View style={[styles.flagBadge, { backgroundColor: theme.background }]}>
               <Text style={{ fontSize: 20 }}>{txn.flag}</Text>
             </View>
             <View>
-              <Text style={styles.recipientName}>{txn.recipient}</Text>
-              <Text style={styles.recipientSub}>
+              <Text style={[styles.recipientName, { color: theme.text }]}>{txn.recipient}</Text>
+              <Text style={[styles.recipientSub, { color: theme.textSecondary }]}>
                 {txn.username} · {txn.country}
               </Text>
             </View>
           </View>
 
           
-          <View style={styles.amountInset}>
-            <Text style={styles.amountInsetLabel}>YOU SEND</Text>
-            <Text style={styles.amountInsetVal}>
+          <View style={[styles.amountInset, { backgroundColor: theme.background }]}>
+            <Text style={[styles.amountInsetLabel, { color: theme.textSecondary }]}>YOU SEND</Text>
+            <Text style={[styles.amountInsetVal, { color: theme.text }]}>
               {txn.symbol}{" "}
               {txn.amount.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </Text>
-            <Text style={styles.amountInsetCurrency}>{txn.currency}</Text>
+            <Text style={[styles.amountInsetCurrency, { color: theme.textSecondary }]}>{txn.currency}</Text>
           </View>
 
           
           <View style={{ gap: 6, marginBottom: 16 }}>
             <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Amount</Text>
-              <Text style={styles.breakdownVal}>
+              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Amount</Text>
+              <Text style={[styles.breakdownVal, { color: theme.text }]}>
                 {txn.symbol} {txn.amount.toFixed(2)}
               </Text>
             </View>
             <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Network Fee</Text>
-              <Text style={styles.breakdownVal}>
+              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Network Fee</Text>
+              <Text style={[styles.breakdownVal, { color: theme.text }]}>
                 {txn.symbol} {txn.fee.toFixed(2)}
               </Text>
             </View>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
             <View style={styles.breakdownRow}>
-              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={[styles.totalLabel, { color: theme.text }]}>Total</Text>
               <Text style={styles.totalVal}>
                 {txn.symbol}{" "}
                 {txn.total.toLocaleString(undefined, {
@@ -276,9 +279,9 @@ function ConfirmationCard({
             <View style={styles.actionRow}>
               <AnimatedButton
                 onPress={() => onCancel(message.id)}
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: theme.background }]}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={[styles.cancelText, { color: theme.textSecondary }]}>Cancel</Text>
               </AnimatedButton>
               <AnimatedButton
                 onPress={() => onConfirm(message.id)}
@@ -295,21 +298,21 @@ function ConfirmationCard({
           )}
 
           {status === "processing" && (
-            <View style={styles.loadingWrapper}>
+            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
               <ActivityIndicator size="small" color="#10B981" />
-              <Text style={styles.loadingText}>Sending via wallet transfer…</Text>
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Sending via wallet transfer…</Text>
             </View>
           )}
 
           {status === "completed" && (
-            <View style={styles.successWrapper}>
+            <View style={[styles.successWrapper, { backgroundColor: theme.background }]}>
               <CheckCircle size={24} color="#48bb78" />
-              <Text style={styles.successText}>Transaction Completed!</Text>
-              <Text style={styles.txnIdText}>ID: {txnId}</Text>
+              <Text style={[styles.successText, { color: theme.text }]}>Transaction Completed!</Text>
+              <Text style={[styles.txnIdText, { color: theme.textSecondary }]}>ID: {txnId}</Text>
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => onSendAgain(txn)}
-                style={styles.againBtn}
+                style={[styles.againBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
               >
                 <RotateCcw size={12} color="#10B981" style={{ marginRight: 4 }} />
                 <Text style={styles.againText}>Send Again</Text>
@@ -318,9 +321,9 @@ function ConfirmationCard({
           )}
 
           {status === "cancelled" && (
-            <View style={styles.loadingWrapper}>
+            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
               <X size={14} color="#ef4444" />
-              <Text style={{ fontSize: 12, color: "#9aa3b5", fontWeight: "600" }}>
+              <Text style={{ fontSize: 12, color: theme.textSecondary, fontWeight: "600" }}>
                 Cancelled
               </Text>
             </View>
@@ -341,28 +344,29 @@ function Web3ConfirmationCard({
   onCancel: (id: string) => void;
 }) {
   const { action, network, gasFee, status, txHash } = message;
+  const theme = useTheme();
   return (
     <View style={styles.botContainer}>
       <View style={styles.botAvatar}>
         <Bot size={13} color="white" />
       </View>
-      <View style={styles.confirmCard}>
-        <View style={styles.cardHeader}>
+      <View style={[styles.confirmCard, { backgroundColor: theme.surface }]}>
+        <View style={[styles.cardHeader, { borderBottomColor: theme.border }]}>
           <Text style={styles.cardHeaderTitle}>SMART CONTRACT ACTION</Text>
         </View>
 
         <View style={styles.cardContent}>
           <View style={{ gap: 8, marginBottom: 16 }}>
             <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Action</Text>
-              <Text style={styles.web3Val}>{action}</Text>
+              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Action</Text>
+              <Text style={[styles.web3Val, { color: theme.text }]}>{action}</Text>
             </View>
             <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Network</Text>
+              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Network</Text>
               <Text style={[styles.web3Val, { color: "#10B981" }]}>{network}</Text>
             </View>
             <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Gas Fee</Text>
+              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Gas Fee</Text>
               <Text style={[styles.web3Val, { color: "#48bb78" }]}>{gasFee}</Text>
             </View>
           </View>
@@ -371,9 +375,9 @@ function Web3ConfirmationCard({
             <View style={styles.actionRow}>
               <AnimatedButton
                 onPress={() => onCancel(message.id)}
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: theme.background }]}
               >
-                <Text style={styles.cancelText}>Reject</Text>
+                <Text style={[styles.cancelText, { color: theme.textSecondary }]}>Reject</Text>
               </AnimatedButton>
               <AnimatedButton
                 onPress={() => onConfirm(message.id)}
@@ -390,24 +394,24 @@ function Web3ConfirmationCard({
           )}
 
           {status === "signing" && (
-            <View style={styles.loadingWrapper}>
+            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
               <ActivityIndicator size="small" color="#48bb78" />
-              <Text style={styles.loadingText}>Broadcasting to Morph L2...</Text>
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Broadcasting to Morph L2...</Text>
             </View>
           )}
 
           {status === "completed" && (
-            <View style={styles.successWrapper}>
+            <View style={[styles.successWrapper, { backgroundColor: theme.background }]}>
               <CheckCircle size={24} color="#48bb78" />
-              <Text style={styles.successText}>Transaction Confirmed!</Text>
-              <Text style={styles.txnIdText}>TxHash: {txHash}</Text>
+              <Text style={[styles.successText, { color: theme.text }]}>Transaction Confirmed!</Text>
+              <Text style={[styles.txnIdText, { color: theme.textSecondary }]}>TxHash: {txHash}</Text>
             </View>
           )}
 
           {status === "cancelled" && (
-            <View style={styles.loadingWrapper}>
+            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
               <X size={14} color="#ef4444" />
-              <Text style={{ fontSize: 12, color: "#9aa3b5", fontWeight: "600" }}>
+              <Text style={{ fontSize: 12, color: theme.textSecondary, fontWeight: "600" }}>
                 Transaction Rejected
               </Text>
             </View>
@@ -429,6 +433,8 @@ function MessageBubble({
   onCancel: (id: string) => void;
   onSendAgain: (txn: TxnData) => void;
 }) {
+  const theme = useTheme();
+
   if (message.role === "user") {
     return (
       <View style={styles.userContainer}>
@@ -465,7 +471,7 @@ function MessageBubble({
       <View style={styles.botAvatar}>
         <Bot size={13} color="white" />
       </View>
-      <View style={styles.botBubble}>
+      <View style={[styles.botBubble, { backgroundColor: theme.surface }]}>
         <FormattedText text={message.text} />
       </View>
     </View>
@@ -490,7 +496,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-
+  const theme = useTheme();
 
   const autoScroll = () => {
     setTimeout(() => {
@@ -677,21 +683,21 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
       keyboardVerticalOffset={Platform.OS === "ios" ? 48 : 0}
       style={styles.keyboardContainer}
     >
-      <View style={styles.mainContainer}>
+      <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
 
         
-        <View style={styles.header}>
+        <View style={[styles.header, { borderColor: theme.border }]}>
           <AnimatedButton
             onPress={onBack}
-            style={styles.backBtn}
+            style={[styles.backBtn, { backgroundColor: theme.surface }]}
           >
-            <ArrowLeft size={17} color="#4a5568" />
+            <ArrowLeft size={17} color={theme.icon} />
           </AnimatedButton>
           <View style={styles.headerTitleRow}>
             <View style={styles.botAvatar}>
               <Bot size={17} color="white" />
             </View>
-            <Text style={styles.headerTitleText}>AI Wallet Assistant</Text>
+            <Text style={[styles.headerTitleText, { color: theme.text }]}>AI Wallet Assistant</Text>
           </View>
         </View>
 
@@ -718,7 +724,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
               <View style={styles.botAvatar}>
                 <Bot size={13} color="white" />
               </View>
-              <View style={styles.typingDotsCard}>
+              <View style={[styles.typingDotsCard, { backgroundColor: theme.surface }]}>
                 <ActivityIndicator size="small" color="#9aa3b5" />
               </View>
             </View>
@@ -737,9 +743,9 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
                 <AnimatedButton
                   key={chip}
                   onPress={() => handleSend(chip)}
-                  style={styles.chipBtn}
+                  style={[styles.chipBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 >
-                  <Text style={styles.chipBtnText}>{chip}</Text>
+                  <Text style={[styles.chipBtnText, { color: theme.textSecondary }]}>{chip}</Text>
                 </AnimatedButton>
               ))}
             </ScrollView>
@@ -748,16 +754,16 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
         </ScrollView>
 
         
-        <SafeAreaView style={{ backgroundColor: "#ffffff" }}>
-          <View style={styles.inputBar}>
-            <View style={styles.insetInputContainer}>
+        <SafeAreaView style={{ backgroundColor: theme.background }}>
+          <View style={[styles.inputBar, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            <View style={[styles.insetInputContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <TextInput
                 value={inputText}
                 onChangeText={setInputText}
                 onSubmitEditing={() => handleSend()}
                 placeholder='Try "Send ₱1000 to Maria"'
                 placeholderTextColor="#9aa3b5"
-                style={styles.textInput}
+                style={[styles.textInput, { color: theme.text }]}
               />
             </View>
             <AnimatedButton
@@ -772,8 +778,8 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
                   <ArrowUp size={18} color="#ffffff" />
                 </LinearGradient>
               ) : (
-                <View style={styles.sendBtn}>
-                  <Mic size={18} color="#4a5568" />
+                <View style={[styles.sendBtn, { backgroundColor: theme.surface }]}>
+                  <Mic size={18} color={theme.icon} />
                 </View>
               )}
             </AnimatedButton>

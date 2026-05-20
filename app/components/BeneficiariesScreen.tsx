@@ -23,7 +23,7 @@ import {
   ChevronDown,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useApp, Recipient } from "../context";
+import { useApp, Recipient, useTheme } from "../context";
 import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 import {
@@ -45,6 +45,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
     fundingSources,
     activeFundingSourceId,
   } = useApp();
+  const theme = useTheme();
 
   const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];
 
@@ -110,7 +111,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
       {refreshing && (
         <View style={styles.topRefreshContainer}>
           <ActivityIndicator size="small" color="#10B981" />
@@ -129,7 +130,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         <View style={styles.header}>
           <View>
             <Text style={styles.headerSubtitle}>SAVED CONTACTS</Text>
-            <Text style={styles.headerTitle}>Recipients</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Recipients</Text>
           </View>
           <AnimatedButton
             onPress={() => setIsAdding(true)}
@@ -145,14 +146,14 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         </View>
 
         
-        <View style={styles.searchBarContainer}>
+        <View style={[styles.searchBarContainer, { backgroundColor: theme.surface }]}>
           <Search size={18} color="#9aa3b5" style={{ marginRight: 10 }} />
           <TextInput
             placeholder="Search by name or bank..."
             placeholderTextColor="#9aa3b5"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
           />
           {searchQuery !== "" && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -167,13 +168,13 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             <AnimatedButton
               key={r.id}
               onPress={() => setSelectedRecipient(r)}
-              style={styles.recipientCard}
+              style={[styles.recipientCard, { backgroundColor: theme.surface }]}
             >
               <View style={styles.avatarWrapper}>
                 <User size={18} color="#ffffff" />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.recipientName} numberOfLines={1}>
+                <Text style={[styles.recipientName, { color: theme.text }]} numberOfLines={1}>
                   {r.name}
                 </Text>
                 <View style={styles.recipientSubRow}>
@@ -210,7 +211,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
               onChangeText={setName}
               placeholder="e.g. Maria Mendoza"
               placeholderTextColor="#9aa3b5"
-              style={styles.inputField}
+              style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
             />
           </View>
 
@@ -219,9 +220,9 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             <Text style={styles.inputLabel}>COUNTRY</Text>
             <AnimatedButton
               onPress={() => setShowCountryPicker(true)}
-              style={styles.selectBox}
+              style={[styles.selectBox, { backgroundColor: theme.background, borderColor: theme.border }]}
             >
-              <Text style={styles.selectBoxText}>
+              <Text style={[styles.selectBoxText, { color: theme.text }]}>
                 {getCountryFlag(countryCode)} {getCountryName(countryCode)}
               </Text>
               <ChevronDown size={16} color="#9aa3b5" />
@@ -233,9 +234,9 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             <Text style={styles.inputLabel}>PAYMENT METHOD</Text>
             <AnimatedButton
               onPress={() => setShowBankPicker(true)}
-              style={styles.selectBox}
+              style={[styles.selectBox, { backgroundColor: theme.background, borderColor: theme.border }]}
             >
-              <Text style={[styles.selectBoxText, !bank && { color: "#9aa3b5" }]}>
+              <Text style={[styles.selectBoxText, { color: theme.text }, !bank && { color: "#9aa3b5" }]}>
                 {bank || "Select Bank or Wallet"}
               </Text>
               <ChevronDown size={16} color="#9aa3b5" />
@@ -251,7 +252,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
               keyboardType="numeric"
               placeholder="e.g. 0917 123 4567"
               placeholderTextColor="#9aa3b5"
-              style={styles.inputField}
+              style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
             />
           </View>
 
@@ -283,7 +284,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         {selectedRecipient && (
           <View style={{ gap: 16 }}>
             
-            <View style={styles.detailCard}>
+            <View style={[styles.detailCard, { backgroundColor: theme.background }]}>
               <View style={styles.detailAvatarWrapper}>
                 <Text style={styles.detailAvatarInitials}>
                   {selectedRecipient.name
@@ -294,7 +295,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
                     .toUpperCase()}
                 </Text>
               </View>
-              <Text style={styles.detailName}>{selectedRecipient.name}</Text>
+              <Text style={[styles.detailName, { color: theme.text }]}>{selectedRecipient.name}</Text>
               <Text style={styles.detailUsername}>
                 @{selectedRecipient.name.toLowerCase().replace(/\s+/g, "")}
               </Text>
@@ -307,23 +308,23 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
             </View>
 
             
-            <View style={styles.detailInfoBox}>
-              <View style={styles.detailRow}>
+            <View style={[styles.detailInfoBox, { backgroundColor: theme.background }]}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>PAYMENT METHOD</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Building2 size={14} color="#10B981" />
-                  <Text style={styles.detailValBold}>{selectedRecipient.bankName}</Text>
+                  <Text style={[styles.detailValBold, { color: theme.text }]}>{selectedRecipient.bankName}</Text>
                 </View>
               </View>
 
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>ACCOUNT NUMBER</Text>
-                <Text style={styles.detailMono}>{selectedRecipient.accountNumber}</Text>
+                <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedRecipient.accountNumber}</Text>
               </View>
 
               <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.detailLabel}>CURRENCY</Text>
-                <Text style={styles.detailValBold}>{selectedRecipient.currency}</Text>
+                <Text style={[styles.detailValBold, { color: theme.text }]}>{selectedRecipient.currency}</Text>
               </View>
             </View>
 
@@ -362,11 +363,11 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
       
       <Modal visible={showCountryPicker} animationType="slide" transparent>
         <View style={styles.pickerModalOverlay}>
-          <SafeAreaView style={styles.pickerModalContent}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerHeaderTitle}>Select Country</Text>
+          <SafeAreaView style={[styles.pickerModalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.pickerHeader, { borderColor: theme.border }]}>
+              <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Select Country</Text>
               <AnimatedButton onPress={() => setShowCountryPicker(false)}>
-                <X size={20} color="#2d3748" />
+                <X size={20} color={theme.icon} />
               </AnimatedButton>
             </View>
             <FlatList
@@ -382,11 +383,12 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
                   }}
                   style={[
                     styles.pickerRow,
-                    countryCode === item.code && styles.pickerRowActive,
+                    { borderColor: theme.border },
+                    countryCode === item.code && [styles.pickerRowActive, { backgroundColor: theme.border }],
                   ]}
                 >
                   <Text style={styles.pickerFlag}>{item.flag}</Text>
-                  <Text style={styles.pickerName}>{item.name}</Text>
+                  <Text style={[styles.pickerName, { color: theme.text }]}>{item.name}</Text>
                   {countryCode === item.code && <Check size={18} color="#10B981" />}
                 </TouchableOpacity>
               )}
@@ -398,11 +400,11 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
       
       <Modal visible={showBankPicker} animationType="slide" transparent>
         <View style={styles.pickerModalOverlay}>
-          <SafeAreaView style={styles.pickerModalContent}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerHeaderTitle}>Select Payment Method</Text>
+          <SafeAreaView style={[styles.pickerModalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.pickerHeader, { borderColor: theme.border }]}>
+              <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Select Payment Method</Text>
               <AnimatedButton onPress={() => setShowBankPicker(false)}>
-                <X size={20} color="#2d3748" />
+                <X size={20} color={theme.icon} />
               </AnimatedButton>
             </View>
             <FlatList
@@ -415,10 +417,10 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
                     setBank(item);
                     setShowBankPicker(false);
                   }}
-                  style={[styles.pickerRow, bank === item && styles.pickerRowActive]}
+                  style={[styles.pickerRow, { borderColor: theme.border }, bank === item && [styles.pickerRowActive, { backgroundColor: theme.border }]]}
                 >
                   <Building2 size={16} color="#10B981" style={{ marginRight: 12 }} />
-                  <Text style={styles.pickerName}>{item}</Text>
+                  <Text style={[styles.pickerName, { color: theme.text }]}>{item}</Text>
                   {bank === item && <Check size={18} color="#10B981" />}
                 </TouchableOpacity>
               )}
@@ -433,7 +435,6 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f8fafc",
   },
   scrollContent: {
     paddingHorizontal: 20,

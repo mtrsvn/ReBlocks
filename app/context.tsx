@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from './firebase';
+import { getTheme } from './colors';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
   collection, 
@@ -67,7 +69,7 @@ export interface UserProfile {
   kycStatus: 'pending' | 'verified' | 'failed';
   defaultCurrency: 'USD' | 'PHP';
   pin?: boolean;
-  userPin?: number;
+  userPin?: number | null;
   pinsetup?: string | null;
   pinAttempt?: number;
   isLocked?: boolean;
@@ -83,8 +85,10 @@ interface AppContextType {
   exchangeRates: { [key: string]: number };
   activeFundingSourceId: string;
   defaultCurrency: 'USD' | 'PHP';
+  darkMode: boolean;
   setDefaultCurrency: (cur: 'USD' | 'PHP') => Promise<void>;
   setActiveFundingSourceId: (id: string) => void;
+  setDarkMode: (isDark: boolean) => void;
   addRecipient: (recipient: Omit<Recipient, 'id'>) => Promise<void>;
   updateRecipient: (id: string, recipient: Partial<Recipient>) => Promise<void>;
   deleteRecipient: (id: string) => Promise<void>;
@@ -98,6 +102,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [defaultCurrency, setDefaultCurrencyState] = useState<'USD' | 'PHP'>('USD');
+  const [darkMode, setDarkMode] = useState(false);
   const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [activeFundingSourceId, setActiveFundingSourceId] = useState('');
   const [recipients, setRecipients] = useState<Recipient[]>([]);
@@ -141,6 +146,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const interval = setInterval(fetchRates, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Load dark mode preference on mount
+  useEffect(() => {
+    const loadDarkMode = async () => {
+      try {
+        const saved = await AsyncStorage.getItem("dark_mode");
+        if (saved !== null) {
+          setDarkMode(saved === "true");
+        }
+      } catch (error) {
+        console.log("Failed to load dark mode preference:", error);
+      }
+    };
+    loadDarkMode();
+  }, []);
+
+  // Save dark mode preference when it changes
+  useEffect(() => {
+    const saveDarkMode = async () => {
+      try {
+        await AsyncStorage.setItem("dark_mode", darkMode.toString());
+      } catch (error) {
+        // Silent catch
+      }
+    };
+    saveDarkMode();
+  }, [darkMode]);
 
   useEffect(() => {
     let unsubscribeUser = () => {};
@@ -290,7 +322,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeFundingSourceId, 
       setActiveFundingSourceId, 
       defaultCurrency, 
-      setDefaultCurrency, 
+      setDefaultCurrency,
+      darkMode,
+      setDarkMode,
       addRecipient, 
       updateRecipient, 
       deleteRecipient, 
@@ -306,4 +340,9 @@ export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) throw new Error('useApp must be used within AppProvider');
   return context;
+};
+
+export const useTheme = () => {
+  const { darkMode } = useApp();
+  return getTheme(darkMode);
 };

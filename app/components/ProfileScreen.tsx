@@ -34,7 +34,7 @@ import {
 } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
-import { useApp } from "../context";
+import { useApp, useTheme } from "../context";
 import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
 import { PinEntryScreen } from "./PinEntryScreen";
@@ -48,9 +48,9 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps) {
-  const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile } = useApp();
+  const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile, darkMode, setDarkMode } = useApp();
+  const theme = useTheme();
   const [biometric, setBiometric] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // States for Didit modal
@@ -269,9 +269,9 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           toggle: true,
           toggleVal: darkMode,
           onToggle: (val: boolean) => {
+
             setDarkMode(val);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            Alert.alert("Dark Mode", `Dark Mode has been ${val ? "enabled" : "disabled"}. Premium theme presets will persist locally.`);
           },
         },
         {
@@ -302,10 +302,10 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
       {refreshing && (
-        <View style={styles.topRefreshContainer}>
-          <ActivityIndicator size="small" color="#10B981" />
+        <View style={[styles.topRefreshContainer, { backgroundColor: theme.surface }]}>
+          <ActivityIndicator size="small" color={theme.primary} />
         </View>
       )}
 
@@ -324,7 +324,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         </View>
 
         
-        <View style={styles.flatCard}>
+        <View style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.profileHeaderRow}>
             
             <View style={styles.avatarCircle}>
@@ -333,11 +333,11 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
 
             
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{name}</Text>
+              <Text style={[styles.profileName, { color: theme.text }]}>{name}</Text>
               <Text style={styles.profileEmail}>{email}</Text>
               <View style={styles.badgeRow}>
-                <View style={[styles.verifiedBadge, !isVerified && { backgroundColor: "rgba(239, 68, 68, 0.1)" }]}>
-                  <CheckCircle size={10} color={isVerified ? "#48bb78" : "#ef4444"} style={{ marginRight: 3 }} />
+                <View style={[styles.verifiedBadge, { backgroundColor: isVerified ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)" }]}>
+                  <CheckCircle size={10} color={isVerified ? "#10B981" : "#ef4444"} style={{ marginRight: 3 }} />
                   <Text style={[styles.verifiedText, !isVerified && { color: "#ef4444" }]}>
                     {isVerified ? "VERIFIED" : "UNVERIFIED"}
                   </Text>
@@ -347,7 +347,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           </View>
 
           
-          <View style={styles.cardDivider} />
+          <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
 
           
           <View style={styles.statsGrid}>
@@ -357,7 +357,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
               { label: "Member Since", value: "2023" },
             ].map(({ label, value }) => (
               <View key={label} style={styles.statCol}>
-                <Text style={styles.statVal}>{value}</Text>
+                <Text style={[styles.statVal, { color: theme.text }]}>{value}</Text>
                 <Text style={styles.statLabel}>{label}</Text>
               </View>
             ))}
@@ -387,7 +387,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   : "Tap to verify your ID using Didit KYC Protocol"}
               </Text>
             </View>
-            <View style={styles.kycBadge}>
+            <View style={[styles.kycBadge, { backgroundColor: theme.background }]}>
               <Text style={styles.kycBadgeText}>
                 {isVerified ? "✓ Verified" : "⚠️ Start"}
               </Text>
@@ -416,7 +416,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
 
           <View style={{ gap: 10 }}>
             {fundingSources.map((source) => (
-              <View key={source.id} style={styles.flatCardRow}>
+              <View key={source.id} style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
                 <View style={styles.methodIconWrapper}>
                   {source.type === "bank" ? (
                     <Building2 size={16} color="#10B981" />
@@ -425,14 +425,14 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.methodName}>{source.name}</Text>
+                  <Text style={[styles.methodName, { color: theme.text }]}>{source.name}</Text>
                   <Text style={styles.methodSub}>
                     {source.provider} · •••• {source.last4}
                   </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <View style={styles.activeStatusBadge}>
-                    <Text style={styles.activeStatusText}>ACTIVE</Text>
+                  <View style={[styles.activeStatusBadge, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
+                    <Text style={[styles.activeStatusText, { color: "#10B981" }]}>ACTIVE</Text>
                   </View>
                   <ChevronRight size={16} color="#b0b8c8" />
                 </View>
@@ -440,7 +440,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             ))}
 
             
-            <View style={styles.flatCardRow}>
+            <View style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
               <View style={styles.methodIconWrapper}>
                 <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -451,7 +451,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                 </Svg>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.methodName}>Connect Web3 Wallet</Text>
+                <Text style={[styles.methodName, { color: theme.text }]}>Connect Web3 Wallet</Text>
                 <Text style={styles.methodSub}>Morph Network</Text>
               </View>
               <AnimatedButton
@@ -473,7 +473,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         {settingSections.map((section) => (
           <View key={section.title} style={{ marginBottom: 20 }}>
             <Text style={styles.sectionTitle}>{section.title.toUpperCase()}</Text>
-            <View style={styles.flatCardGroup}>
+            <View style={[styles.flatCardGroup, { backgroundColor: theme.surface }]}>
               {section.items.map((item, i) => {
                 const Icon = item.icon;
                 const isLast = i === section.items.length - 1;
@@ -489,7 +489,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                           <Icon size={16} color="#10B981" />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.settingItemLabel}>{item.label}</Text>
+                          <Text style={[styles.settingItemLabel, { color: theme.text }]}>{item.label}</Text>
                           <Text style={styles.settingItemSub}>{item.sublabel}</Text>
                         </View>
 
@@ -502,15 +502,15 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                             ios_backgroundColor="#cbd5e1"
                           />
                         ) : item.badge ? (
-                          <View style={styles.smsBadge}>
-                            <Text style={styles.smsBadgeText}>{item.badge}</Text>
+                          <View style={[styles.smsBadge, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
+                            <Text style={[styles.smsBadgeText, { color: "#10B981" }]}>{item.badge}</Text>
                           </View>
                         ) : (
                           <ChevronRight size={16} color="#b0b8c8" />
                         )}
                       </View>
                     </TouchableOpacity>
-                    {!isLast && <View style={styles.rowDivider} />}
+                    {!isLast && <View style={[styles.rowDivider, { backgroundColor: theme.border }]} />}
                   </View>
                 );
               })}
@@ -520,7 +520,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
 
         
         <AnimatedButton
-          style={styles.signOutBtn}
+          style={[styles.signOutBtn, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
           onPress={() => {
             Alert.alert("Sign Out", "Are you sure you want to sign out?", [
               { text: "Cancel", style: "cancel" },
@@ -547,14 +547,14 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         <View style={styles.modalForm}>
           <View style={styles.modalInputGroup}>
             <Text style={styles.modalLabel}>FULL NAME</Text>
-            <View style={styles.modalValueBox}>
-              <Text style={styles.modalValueText}>{tempName}</Text>
+            <View style={[styles.modalValueBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Text style={[styles.modalValueText, { color: theme.text }]}>{tempName}</Text>
             </View>
           </View>
           <View style={styles.modalInputGroup}>
             <Text style={styles.modalLabel}>DATE OF BIRTH</Text>
-            <View style={styles.modalValueBox}>
-              <Text style={styles.modalValueText}>
+            <View style={[styles.modalValueBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Text style={[styles.modalValueText, { color: theme.text }]}>
                 {tempBirthdayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </Text>
             </View>
@@ -570,8 +570,8 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         <View style={styles.modalForm}>
           <View style={styles.modalInputGroup}>
             <Text style={styles.modalLabel}>EMAIL ADDRESS</Text>
-            <View style={styles.modalValueBox}>
-              <Text style={styles.modalValueText}>{email}</Text>
+            <View style={[styles.modalValueBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Text style={[styles.modalValueText, { color: theme.text }]}>{email}</Text>
             </View>
           </View>
         </View>
@@ -589,7 +589,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
               <TextInput
                 value={tempPhone}
                 onChangeText={setTempPhone}
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                 placeholder="+63 912 345 6789"
                 placeholderTextColor="#9aa3b5"
                 keyboardType="phone-pad"
@@ -636,10 +636,10 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             <View style={{ paddingVertical: 20 }}>
               <View style={{ alignItems: "center", marginBottom: 20 }}>
                 <CheckCircle size={40} color="#10B981" style={{ marginBottom: 12 }} />
-                <Text style={{ fontSize: 15, fontWeight: "800", color: "#2d3748" }}>
+                <Text style={{ fontSize: 15, fontWeight: "800", color: theme.text }}>
                   {hasPin ? "PIN Changed Successfully!" : "PIN Setup Successfully!"}
                 </Text>
-                <Text style={{ fontSize: 11, color: "#9aa3b5", marginTop: 4, textAlign: "center" }}>
+                <Text style={{ fontSize: 11, color: theme.textSecondary, marginTop: 4, textAlign: "center" }}>
                   Your security PIN is updated and active.
                 </Text>
               </View>
@@ -666,7 +666,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   <TextInput
                     value={currentPin}
                     onChangeText={setCurrentPin}
-                    style={styles.modalInput}
+                    style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                     placeholder="••••"
                     placeholderTextColor="#9aa3b5"
                     keyboardType="numeric"
@@ -680,7 +680,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                 <TextInput
                   value={newPin}
                   onChangeText={setNewPin}
-                  style={styles.modalInput}
+                  style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                   placeholder="••••"
                   placeholderTextColor="#9aa3b5"
                   keyboardType="numeric"
@@ -693,7 +693,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                 <TextInput
                   value={confirmPin}
                   onChangeText={setConfirmPin}
-                  style={styles.modalInput}
+                  style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                   placeholder="••••"
                   placeholderTextColor="#9aa3b5"
                   keyboardType="numeric"
@@ -780,12 +780,13 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                 }}
                 style={[
                   styles.currencySelectRow,
+                  { backgroundColor: theme.background, borderColor: theme.border },
                   isSelected && { borderColor: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.04)" }
                 ]}
               >
                 <Text style={{ fontSize: 24, marginRight: 12 }}>{c.flag}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#2d3748" }}>{c.name}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: theme.text }}>{c.name}</Text>
                 </View>
                 {isSelected && <CheckCircle size={18} color="#10B981" />}
               </TouchableOpacity>
@@ -807,9 +808,9 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
               { q: "Which funding sources are supported?", a: "You can securely connect any standard bank account (like BPI, DBS) or standard Visa/Mastercard debit and credit cards for instant deposits." },
               { q: "Is KYC verification mandatory?", a: "Yes, to ensure complete compliance with local financial regulations and prevent identity theft, we require a simple one-time identity verification." }
             ].map((faq, i) => (
-              <View key={i} style={styles.faqItem}>
-                <Text style={styles.faqQuestion}>Q: {faq.q}</Text>
-                <Text style={styles.faqAnswer}>{faq.a}</Text>
+              <View key={i} style={[styles.faqItem, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                <Text style={[styles.faqQuestion, { color: theme.text }]}>Q: {faq.q}</Text>
+                <Text style={[styles.faqAnswer, { color: theme.textSecondary }]}>{faq.a}</Text>
               </View>
             ))}
           </View>
@@ -826,20 +827,20 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             {isVerified ? (
               <View style={{ alignItems: "center", paddingVertical: 20 }}>
                 <CheckCircle size={48} color="#10B981" style={{ marginBottom: 12 }} />
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#0f172a" }}>Identity Fully Verified</Text>
-                <Text style={{ fontSize: 12, color: "#64748b", marginTop: 4, textAlign: "center", lineHeight: 18 }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>Identity Fully Verified</Text>
+                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4, textAlign: "center", lineHeight: 18 }}>
                   Thank you! Your identity has been successfully verified via Didit's decentralized compliance network.
                 </Text>
               </View>
             ) : (
               <View style={{ gap: 14 }}>
-                <Text style={{ fontSize: 13, color: "#475569", lineHeight: 20 }}>
+                <Text style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 20 }}>
                   Verify your identity in seconds using <Text style={{ fontWeight: "700", color: "#10B981" }}>Didit decentralized KYC Protocol</Text>.
                 </Text>
 
-                <View style={{ backgroundColor: "#f8fafc", borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#10B981" }}>
-                  <Text style={{ fontWeight: "700", fontSize: 12, color: "#1e293b", marginBottom: 4 }}>How It Works</Text>
-                  <Text style={{ fontSize: 11, color: "#475569", lineHeight: 16 }}>
+                <View style={{ backgroundColor: theme.background, borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#10B981", borderWidth: 1, borderColor: theme.border }}>
+                  <Text style={{ fontWeight: "700", fontSize: 12, color: theme.text, marginBottom: 4 }}>How It Works</Text>
+                  <Text style={{ fontSize: 11, color: theme.textSecondary, lineHeight: 16 }}>
                     1. Secure KYC: Fully decentralized and end-to-end encrypted identity protocol.{"\n"}
                     2. Biometric Scan: Quick face verification matched against your ID.{"\n"}
                     3. Ultimate Privacy: You own your identity credentials. Revoke permission at any time.
@@ -935,7 +936,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f8fafc",
   },
   scrollContent: {
     paddingHorizontal: 20,

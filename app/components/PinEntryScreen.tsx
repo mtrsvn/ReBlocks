@@ -11,7 +11,7 @@ import {
 import { Delete } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useApp } from "../context";
+import { useApp, useTheme } from "../context";
 
 interface PinEntryScreenProps {
   onUnlock: () => void;
@@ -26,6 +26,7 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
   const [storedPin, setStoredPin] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const { userProfile, updateUserProfile } = useApp();
+  const theme = useTheme();
 
   useEffect(() => {
     if (userProfile?.isLocked && userProfile?.lockedUntil) {
@@ -180,22 +181,22 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
                 return (
                   <TouchableOpacity
                     key={colIndex}
-                    style={styles.key}
+                    style={[styles.key, { backgroundColor: theme.surface }]}
                     onPress={handleDelete}
                     disabled={loading}
                   >
-                    <Delete size={28} color="#475569" />
+                    <Delete size={28} color={theme.icon} />
                   </TouchableOpacity>
                 );
               }
               return (
                 <TouchableOpacity
                   key={colIndex}
-                  style={styles.key}
+                  style={[styles.key, { backgroundColor: theme.surface }]}
                   onPress={() => handlePress(key)}
                   disabled={loading}
                 >
-                  <Text style={styles.keyText}>{key}</Text>
+                  <Text style={[styles.keyText, { color: theme.text }]}>{key}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -206,10 +207,10 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>
+          <Text style={[styles.title, { color: theme.text }]}>
             {isAccountLocked() ? "Access Suspended" : forRemoval ? "Remove PIN" : "Enter Security PIN"}
           </Text>
           <Text style={styles.subtitle}>
@@ -319,9 +320,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#ffffff",
-    shadowColor: "#94a3b8",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 4,
   },

@@ -29,7 +29,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { AnimatedButton } from "./AnimatedButton";
-import { useApp, Recipient } from "../context";
+import { useApp, Recipient, useTheme } from "../context";
 import { getCountryFlag } from "../utils/countries";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -58,6 +58,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
     activeFundingSourceId,
     defaultCurrency,
   } = useApp();
+  const theme = useTheme();
 
   const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];
 
@@ -157,17 +158,17 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const stepLabels = ["Recipient", "Amount", "Review", "Done"];
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
       
       <View style={styles.header}>
         <AnimatedButton
           onPress={handleBack}
-          style={styles.backBtn}
+          style={[styles.backBtn, { backgroundColor: theme.surface }]}
         >
-          <ArrowLeft size={18} color="#4a5568" />
+          <ArrowLeft size={18} color={theme.icon} />
         </AnimatedButton>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>International Transfer</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>International Transfer</Text>
           <Text style={styles.headerSubtitle}>
             Step {step} of 4 · {stepLabels[step - 1]}
           </Text>
@@ -253,13 +254,13 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                         setSendCurrency(r.currency);
                         handleNext();
                       }}
-                      style={styles.flatCardRow}
+                      style={[styles.flatCardRow, { backgroundColor: theme.surface }]}
                     >
                       <View style={styles.avatarCircle}>
                         <Text style={styles.avatarText}>{r.name.charAt(0)}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.recipientName}>{r.name}</Text>
+                        <Text style={[styles.recipientName, { color: theme.text }]}>{r.name}</Text>
                         <Text style={styles.recipientSub}>
                           {r.bankName} · {getCountryFlag(r.countryCode)}{" "}
                           {r.countryCode.toUpperCase()}
@@ -280,7 +281,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                     placeholderTextColor="#9aa3b5"
                     value={newName}
                     onChangeText={setNewName}
-                    style={styles.inputField}
+                    style={[styles.inputField, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                   />
                 </View>
 
@@ -298,6 +299,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                           }}
                           style={[
                             styles.countryGridBtn,
+                            { backgroundColor: theme.surface, borderColor: theme.border },
                             isSelected && styles.countryGridBtnActive,
                           ]}
                         >
@@ -305,6 +307,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                           <Text
                             style={[
                               styles.countryGridLabel,
+                              { color: theme.text },
                               isSelected && { color: "#ffffff" },
                             ]}
                           >
@@ -327,12 +330,14 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                           onPress={() => setNewBank(b)}
                           style={[
                             styles.bankGridBtn,
+                            { backgroundColor: theme.surface, borderColor: theme.border },
                             isSelected && styles.bankGridBtnActive,
                           ]}
                         >
                           <Text
                             style={[
                               styles.bankGridLabel,
+                              { color: theme.text },
                               isSelected && { color: "#ffffff" },
                             ]}
                           >
@@ -352,7 +357,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                     keyboardType="numeric"
                     value={newAccountNumber}
                     onChangeText={setNewAccountNumber}
-                    style={styles.inputField}
+                    style={[styles.inputField, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                   />
                 </View>
 
@@ -383,14 +388,14 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
         {step === 2 && (
           <View style={{ gap: 20 }}>
             
-            <View style={styles.flatCardRow}>
+            <View style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarText}>
                   {(selectedRecipient?.name || newName).charAt(0)}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.recipientName}>
+                <Text style={[styles.recipientName, { color: theme.text }]}>
                   {selectedRecipient?.name || newName}
                 </Text>
                 <Text style={styles.recipientSub}>
@@ -400,7 +405,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
             </View>
 
             
-            <View style={styles.flatCard}>
+            <View style={[styles.flatCard, { backgroundColor: theme.surface }]}>
               <Text style={styles.inputCardLabel}>Amount to Send ({sendCurrency})</Text>
               <View style={styles.amountInputContainer}>
                 <Text style={styles.currencySymbol}>{sendCurrency}</Text>
@@ -411,19 +416,19 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   autoFocus
                   value={sendAmount}
                   onChangeText={setSendAmount}
-                  style={styles.largeAmountInput}
+                  style={[styles.largeAmountInput, { color: theme.text }]}
                 />
               </View>
             </View>
 
             
-            <View style={styles.calcInsetCard}>
+            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
               <View style={styles.calcRow}>
                 <View style={styles.labelCol}>
                   <Banknote size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
                 </View>
-                <Text style={styles.calcVal}>
+                <Text style={[styles.calcVal, { color: theme.text }]}>
                   1 {sendCurrency} ={" "}
                   {sendCurrency === defaultCurrency
                     ? "1.00"
@@ -437,7 +442,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   <Info size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
                   <Text style={styles.calcLabel}>Transfer Fee</Text>
                 </View>
-                <Text style={styles.calcVal}>{curSymbol}{baseFee.toFixed(2)}</Text>
+                <Text style={[styles.calcVal, { color: theme.text }]}>{curSymbol}{baseFee.toFixed(2)}</Text>
               </View>
 
               <View style={styles.calcRow}>
@@ -448,10 +453,10 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                 <Text style={[styles.calcVal, { color: "#10B981" }]}>Instant</Text>
               </View>
 
-              <View style={styles.calcDivider} />
+              <View style={[styles.calcDivider, { backgroundColor: theme.border }]} />
 
               <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-                <Text style={styles.calcTotalLabel}>Total to Pay</Text>
+                <Text style={[styles.calcTotalLabel, { color: theme.text }]}>Total to Pay</Text>
                 <Text style={styles.calcTotalVal}>
                   {curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </Text>
@@ -485,14 +490,14 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
             </Text>
 
             
-            <View style={styles.calcInsetCard}>
+            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
               <Text style={styles.sectionLabel}>FUNDING SOURCE</Text>
               <View style={styles.fundingRow}>
                 <View style={styles.fundingIconWrapper}>
                   <Building2 size={18} color="#10B981" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fundingName}>{primarySource.name}</Text>
+                  <Text style={[styles.fundingName, { color: theme.text }]}>{primarySource.name}</Text>
                   <Text style={styles.fundingProvider}>
                     {primarySource.provider} • ***{primarySource.last4}
                   </Text>
@@ -502,11 +507,11 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
             </View>
 
             
-            <View style={styles.flatCard}>
+            <View style={[styles.flatCard, { backgroundColor: theme.surface }]}>
               <View style={styles.reviewFlowRow}>
                 <View style={styles.reviewCol}>
                   <Text style={styles.reviewCap}>PAYING</Text>
-                  <Text style={styles.reviewAmt}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+                  <Text style={[styles.reviewAmt, { color: theme.text }]}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
                   <Text style={styles.reviewSub}>{defaultCurrency}</Text>
                 </View>
 
@@ -525,19 +530,19 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                 </View>
               </View>
 
-              <View style={styles.cardDivider} />
+              <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
 
               <View style={{ gap: 10 }}>
                 <View style={styles.calcRow}>
                   <Text style={styles.calcLabel}>Recipient</Text>
-                  <Text style={styles.calcValBold}>
+                  <Text style={[styles.calcValBold, { color: theme.text }]}>
                     {selectedRecipient?.name || newName}
                   </Text>
                 </View>
 
                 <View style={styles.calcRow}>
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
-                  <Text style={styles.calcValBold}>
+                  <Text style={[styles.calcValBold, { color: theme.text }]}>
                     1 {sendCurrency} ={" "}
                     {sendCurrency === defaultCurrency
                       ? "1.00"
@@ -548,7 +553,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
                 <View style={[styles.calcRow, { borderBottomWidth: 0 }]}>
                   <Text style={styles.calcLabel}>Fee</Text>
-                  <Text style={styles.calcValBold}>{curSymbol}{baseFee.toFixed(2)}</Text>
+                  <Text style={[styles.calcValBold, { color: theme.text }]}>{curSymbol}{baseFee.toFixed(2)}</Text>
                 </View>
               </View>
             </View>
@@ -575,16 +580,16 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
               <CheckCircle size={44} color="#10B981" />
             </View>
 
-            <Text style={styles.successTitle}>Remittance Sent!</Text>
+            <Text style={[styles.successTitle, { color: theme.text }]}>Remittance Sent!</Text>
             <Text style={styles.successSubtitle}>
               Funds are being delivered to {selectedRecipient?.name || newName}
             </Text>
 
             
-            <View style={styles.calcInsetCard}>
+            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Transaction ID</Text>
-                <Text style={styles.calcValBold}>
+                <Text style={[styles.calcValBold, { color: theme.text }]}>
                   REM-{Math.floor(Math.random() * 900000) + 100000}
                 </Text>
               </View>
@@ -598,10 +603,10 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Total Paid</Text>
-                <Text style={styles.calcValBold}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+                <Text style={[styles.calcValBold, { color: theme.text }]}>{curSymbol}{totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
               </View>
 
-              <View style={styles.calcDivider} />
+              <View style={[styles.calcDivider, { backgroundColor: theme.border }]} />
 
               <View style={styles.calcHeaderRow}>
                 <Zap size={13} color="#10B981" />
@@ -610,12 +615,12 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Network</Text>
-                <Text style={styles.calcValBold}>Morph L2 Blockchain</Text>
+                <Text style={[styles.calcValBold, { color: theme.text }]}>Morph L2 Blockchain</Text>
               </View>
 
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Tx Hash</Text>
-                <Text style={styles.calcHash}>0x5f9a...8d2e</Text>
+                <Text style={[styles.calcHash, { color: theme.text }]}>0x5f9a...8d2e</Text>
               </View>
 
               <View style={styles.calcRow}>
@@ -625,7 +630,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Smart Contract</Text>
-                <Text style={styles.calcValBold}>0xReBlocksRemitL2</Text>
+                <Text style={[styles.calcValBold, { color: theme.text }]}>0xReBlocksRemitL2</Text>
               </View>
 
               <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
@@ -640,7 +645,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
             <View style={{ width: "100%", gap: 12 }}>
               <AnimatedButton
                 onPress={handleShare}
-                style={styles.shareBtn}
+                style={[styles.shareBtn, { backgroundColor: theme.surface }]}
               >
                 <Share2 size={16} color="#10B981" style={{ marginRight: 6 }} />
                 <Text style={styles.shareBtnText}>Share Details</Text>

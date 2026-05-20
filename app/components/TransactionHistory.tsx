@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useApp, Transaction } from "../context";
+import { useApp, Transaction, useTheme } from "../context";
 import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 
@@ -31,6 +31,7 @@ export function TransactionHistory() {
     activeFundingSourceId,
     defaultCurrency,
   } = useApp();
+  const theme = useTheme();
 
   const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
 
@@ -86,7 +87,7 @@ export function TransactionHistory() {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
       {refreshing && (
         <View style={styles.topRefreshContainer}>
           <ActivityIndicator size="small" color="#10B981" />
@@ -104,18 +105,18 @@ export function TransactionHistory() {
         
         <View style={styles.header}>
           <Text style={styles.headerSubtitle}>ACTIVITY RECORDS</Text>
-          <Text style={styles.headerTitle}>Transfer History</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Transfer History</Text>
         </View>
 
         
-        <View style={styles.searchBarContainer}>
+        <View style={[styles.searchBarContainer, { backgroundColor: theme.surface }]}>
           <Search size={18} color="#9aa3b5" style={{ marginRight: 10 }} />
           <TextInput
             placeholder="Search by recipient or ID..."
             placeholderTextColor="#9aa3b5"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
           />
           {searchQuery !== "" && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -130,13 +131,13 @@ export function TransactionHistory() {
             <AnimatedButton
               key={tx.id}
               onPress={() => setSelectedTransaction(tx)}
-              style={styles.txRow}
+              style={[styles.txRow, { backgroundColor: theme.surface }]}
             >
               <View style={styles.txIconWrapper}>
                 <Send size={18} color="#ffffff" />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.txName} numberOfLines={1}>
+                <Text style={[styles.txName, { color: theme.text }]} numberOfLines={1}>
                   {tx.recipientName}
                 </Text>
                 <Text style={styles.txDate}>
@@ -171,13 +172,13 @@ export function TransactionHistory() {
       >
         {selectedTransaction && (
           <View style={{ gap: 16 }}>
-            <View style={styles.detailCard}>
-              <View style={styles.detailHeader}>
+            <View style={[styles.detailCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <View style={[styles.detailHeader, { borderColor: theme.border }]}>
                 <View style={styles.detailAvatarWrapper}>
                   <Send size={18} color="#10B981" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.detailName}>{selectedTransaction.recipientName}</Text>
+                  <Text style={[styles.detailName, { color: theme.text }]}>{selectedTransaction.recipientName}</Text>
                   <View style={styles.detailDateRow}>
                     <Calendar size={10} color="#718096" />
                     <Text style={styles.detailDate}>
@@ -190,15 +191,15 @@ export function TransactionHistory() {
                 </View>
               </View>
 
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>AMOUNT SENT</Text>
-                <Text style={styles.detailValBold}>
+                <Text style={[styles.detailValBold, { color: theme.text }]}>
                   {curSymbol}{formatAmount(selectedTransaction.amount, selectedTransaction.currency)}
                 </Text>
               </View>
 
               {selectedTransaction.recipientAmount && (
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { borderColor: theme.border }]}>
                   <Text style={styles.detailLabel}>AMOUNT RECEIVED</Text>
                   <Text style={[styles.detailValBold, { color: "#10B981" }]}>
                     {selectedTransaction.recipientCurrency}{" "}
@@ -208,24 +209,24 @@ export function TransactionHistory() {
               )}
 
               {selectedTransaction.exchangeRate && (
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { borderColor: theme.border }]}>
                   <Text style={styles.detailLabel}>EXCHANGE RATE</Text>
-                  <Text style={styles.detailVal}>
+                  <Text style={[styles.detailVal, { color: theme.text }]}>
                     1 {selectedTransaction.currency || "PHP"} = {selectedTransaction.recipientCurrency === selectedTransaction.currency ? "1.00" : (selectedTransaction.recipientCurrency === "PHP" ? (1 / (selectedTransaction.exchangeRate || 1)) : (selectedTransaction.exchangeRate || 1)).toFixed(2)} {selectedTransaction.recipientCurrency}
                   </Text>
                 </View>
               )}
 
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>FEE</Text>
-                <Text style={styles.detailVal}>
+                <Text style={[styles.detailVal, { color: theme.text }]}>
                   {curSymbol}{formatAmount(selectedTransaction.fee, selectedTransaction.currency)}
                 </Text>
               </View>
 
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>TRANSACTION ID</Text>
-                <Text style={styles.detailMono}>{selectedTransaction.id}</Text>
+                <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedTransaction.id}</Text>
               </View>
 
               <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>

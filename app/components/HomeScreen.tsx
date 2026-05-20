@@ -34,6 +34,7 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Transaction } from "../context";
+import { useTheme } from "../context";
 import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 import * as Haptics from "expo-haptics";
@@ -75,6 +76,9 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     defaultCurrency,
     exchangeRates,
   } = useApp();
+  const theme = useTheme();
+
+  console.log("HomeScreen rendering with theme.background:", theme.background);
 
   const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
 
@@ -193,10 +197,10 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
        {refreshing && (
         <View style={styles.topRefreshContainer}>
-          <ActivityIndicator size="small" color="#10B981" />
+          <ActivityIndicator size="small" color={theme.primary} />
         </View>
       )}
 
@@ -211,14 +215,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerWelcome}>WELCOME BACK</Text>
-            <Text style={styles.headerName}>Carlos Mendoza</Text>
+            <Text style={[styles.headerWelcome, { color: theme.textSecondary }]}>WELCOME BACK</Text>
+            <Text style={[styles.headerName, { color: theme.text }]}>Carlos Mendoza</Text>
           </View>
           <AnimatedButton
             onPress={() => setShowNotifications(true)}
             style={styles.bellBtn}
           >
-            <Bell size={20} color="#10B981" />
+            <Bell size={20} color={theme.primary} />
             {unreadCount > 0 && (
               <View style={styles.badgeDot}>
                 <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -269,7 +273,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         
         <AnimatedButton
           onPress={() => setShowRatesDetail(true)}
-          style={styles.flatCard}
+          style={[styles.flatCard, { backgroundColor: theme.surface }]}
         >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionBadge}>LIVE FX RATES</Text>
@@ -280,11 +284,11 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           </View>
           <View style={styles.flagGrid}>
             {allRates.slice(0, 4).map((r, i) => (
-              <View key={i} style={styles.flagItem}>
+              <View key={i} style={[styles.flagItem, { backgroundColor: theme.background, borderColor: theme.border }]}>
                 <Text style={styles.flagEmoji}>{r.flag}</Text>
                 <Text style={styles.pairText}>{r.pair}</Text>
                 <Text
-                  style={styles.rateText}
+                  style={[styles.rateText, { color: theme.text }]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                 >
@@ -317,12 +321,12 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             <AnimatedButton
               key={label}
               onPress={action}
-              style={styles.gridBtn}
+              style={[styles.gridBtn, { backgroundColor: theme.surface }]}
             >
               <View style={styles.actionIconWrapper}>
                 <Icon size={20} color="#10B981" />
               </View>
-              <Text style={styles.actionLabel}>{label}</Text>
+              <Text style={[styles.actionLabel, { color: theme.text }]}>{label}</Text>
             </AnimatedButton>
           ))}
         </View>
@@ -330,7 +334,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         
         <View style={{ marginTop: 8 }}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.recentTitle}>Recent Transfers</Text>
+            <Text style={[styles.recentTitle, { color: theme.text }]}>Recent Transfers</Text>
             <TouchableOpacity onPress={onHistory} style={styles.linkRow}>
               <Text style={styles.linkText}>View all</Text>
               <ChevronRight size={14} color="#10B981" />
@@ -343,13 +347,13 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 <AnimatedButton
                   key={tx.id}
                   onPress={() => setSelectedTransaction(tx)}
-                  style={styles.txRow}
+                  style={[styles.txRow, { backgroundColor: theme.surface }]}
                 >
                   <View style={styles.txIconWrapper}>
                     <Send size={18} color="#ffffff" />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.txName} numberOfLines={1}>
+                    <Text style={[styles.txName, { color: theme.text }]} numberOfLines={1}>
                       {tx.recipientName}
                     </Text>
                     <Text style={styles.txDate}>
@@ -357,7 +361,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 3 }}>
-                    <Text style={styles.txAmt}>
+                    <Text style={[styles.txAmt, { color: theme.text }]}>
                       {curSymbol}{formatAmount(tx.amount, tx.currency)}
                     </Text>
                     <Text style={styles.completedText}>COMPLETED</Text>
@@ -374,24 +378,24 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         animationType="slide"
         onRequestClose={() => setShowNotifications(false)}
       >
-        <SafeAreaView style={styles.notifModalContainer}>
+        <SafeAreaView style={[styles.notifModalContainer, { backgroundColor: theme.background }]}>
           {notifRefreshing && (
             <View style={styles.topRefreshContainer}>
               <ActivityIndicator size="small" color="#10B981" />
             </View>
           )}
 
-          <View style={styles.notifHeader}>
+          <View style={[styles.notifHeader, { borderColor: theme.border }]}>
             <View>
               <Text style={styles.notifHeaderSubtitle}>INBOX</Text>
-              <Text style={styles.notifHeaderTitle}>Notifications</Text>
+              <Text style={[styles.notifHeaderTitle, { color: theme.text }]}>Notifications</Text>
             </View>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setShowNotifications(false)}
-              style={styles.notifCloseBtn}
+              style={[styles.notifCloseBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
             >
-              <X size={18} color="#4a5568" />
+              <X size={18} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
@@ -415,13 +419,13 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                   key={n.id}
                   activeOpacity={0.8}
                   onPress={() => setReadIds((prev) => [...new Set([...prev, n.id])])}
-                  style={[styles.notifCard, { opacity: isRead ? 0.6 : 1 }]}
+                  style={[styles.notifCard, { opacity: isRead ? 0.6 : 1, backgroundColor: theme.surface, borderColor: theme.border }]}
                 >
                   <View style={[styles.notifIconWrapper, { backgroundColor: n.bg }]}>
                     <Icon size={18} color={n.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.notifCardTitle}>{n.title}</Text>
+                    <Text style={[styles.notifCardTitle, { color: theme.text }]}>{n.title}</Text>
                     <Text style={styles.notifCardBody}>{n.body}</Text>
                     <Text style={styles.notifCardTime}>{n.time}</Text>
                   </View>
@@ -440,11 +444,11 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
       >
         <View style={styles.sheetFXGrid}>
           {allRates.map((r, i) => (
-            <View key={i} style={styles.sheetFXItem}>
+            <View key={i} style={[styles.sheetFXItem, { backgroundColor: theme.background, borderColor: theme.border }]}>
               <Text style={styles.sheetFXEmoji}>{r.flag}</Text>
               <Text style={styles.sheetFXPair}>{r.pair}</Text>
               <Text
-                style={styles.sheetFXRate}
+                style={[styles.sheetFXRate, { color: theme.text }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
               >
@@ -475,6 +479,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 }}
                 style={[
                   styles.popupDropdownRow,
+                  { backgroundColor: theme.background, borderColor: theme.border },
                   isActive && styles.popupDropdownRowActive
                 ]}
               >
@@ -482,7 +487,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                   <Icon size={18} color="#10B981" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.popupDropdownName}>{source.name}</Text>
+                  <Text style={[styles.popupDropdownName, { color: theme.text }]}>{source.name}</Text>
                   <Text style={styles.popupDropdownSub}>
                     {source.provider} · •••• {source.last4}
                   </Text>
@@ -502,8 +507,8 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
       >
         {selectedTransaction && (
           <View style={{ gap: 16 }}>
-            <View style={styles.detailCard}>
-              <View style={styles.detailHeader}>
+            <View style={[styles.detailCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <View style={[styles.detailHeader, { borderColor: theme.border }]}>
                 <View style={styles.detailAvatarWrapper}>
                   <Send size={18} color="#10B981" />
                 </View>
@@ -529,7 +534,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               </View>
 
               {selectedTransaction.recipientAmount && (
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { borderColor: theme.border }]}>
                   <Text style={styles.detailLabel}>AMOUNT RECEIVED</Text>
                   <Text style={[styles.detailValBold, { color: "#10B981" }]}>
                     {selectedTransaction.recipientCurrency}{" "}
@@ -539,24 +544,24 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               )}
 
               {selectedTransaction.exchangeRate && (
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { borderColor: theme.border }]}>
                   <Text style={styles.detailLabel}>EXCHANGE RATE</Text>
-                  <Text style={styles.detailVal}>
+                  <Text style={[styles.detailVal, { color: theme.text }]}>
                     1 {selectedTransaction.currency || "PHP"} = {selectedTransaction.recipientCurrency === selectedTransaction.currency ? "1.00" : (selectedTransaction.recipientCurrency === "PHP" ? (1 / (selectedTransaction.exchangeRate || 1)) : (selectedTransaction.exchangeRate || 1)).toFixed(2)} {selectedTransaction.recipientCurrency}
                   </Text>
                 </View>
               )}
 
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>FEE</Text>
-                <Text style={styles.detailVal}>
+                <Text style={[styles.detailVal, { color: theme.text }]}>
                   {curSymbol}{formatAmount(selectedTransaction.fee, selectedTransaction.currency)}
                 </Text>
               </View>
 
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.detailLabel}>TRANSACTION ID</Text>
-                <Text style={styles.detailMono}>{selectedTransaction.id}</Text>
+                <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedTransaction.id}</Text>
               </View>
             </View>
 
@@ -583,7 +588,6 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f8fafc",
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -612,7 +616,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "rgba(128,128,128,0.2)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000000",

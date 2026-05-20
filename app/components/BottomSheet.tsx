@@ -13,6 +13,7 @@ import {
   Platform,
 } from "react-native";
 import { X } from "lucide-react-native";
+import { useTheme } from "../context";
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const theme = useTheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -98,23 +100,23 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
         <Animated.View
           style={[
             styles.sheetCard,
-            { transform: [{ translateY: slideAnim }] }
+            { transform: [{ translateY: slideAnim }], backgroundColor: theme.surface, borderColor: theme.border }
           ]}
         >
           
           <View style={styles.indicatorContainer}>
-            <View style={styles.indicator} />
+            <View style={[styles.indicator, { backgroundColor: theme.border }]} />
           </View>
 
           
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>{title}</Text>
+          <View style={[styles.sheetHeader, { borderColor: theme.border }]}>
+            <Text style={[styles.sheetTitle, { color: theme.text }]}>{title}</Text>
             <TouchableOpacity
               onPress={handleDismiss}
-              style={styles.closeBtn}
+              style={[styles.closeBtn, { backgroundColor: theme.background, borderColor: theme.border }]}
               activeOpacity={0.7}
             >
-              <X size={18} color="#4a5568" />
+              <X size={18} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
@@ -132,6 +134,9 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
     </Modal>
   );
 }
+
+// We cannot completely move dynamic styles into StyleSheet without passing them,
+// but we will inline them for the background and text below.
 
 const styles = StyleSheet.create({
   modalContainer: {
@@ -152,9 +157,9 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.85,
     borderWidth: 1.5,
     borderColor: "rgba(255, 255, 255, 0.85)",
-    shadowColor: "#a3b1c6",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 20,
     overflow: "hidden",
@@ -194,9 +199,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(163, 177, 198, 0.15)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#a3b1c6",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.5,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },

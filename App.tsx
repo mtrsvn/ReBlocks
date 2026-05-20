@@ -11,6 +11,7 @@ import {
 import { Bot } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppProvider, Recipient, useApp } from "./app/context";
+import { getTheme } from "./app/colors";
 import { BottomNav } from "./app/components/BottomNav";
 import { HomeScreen } from "./app/components/HomeScreen";
 import { SendMoneyFlow } from "./app/components/SendMoneyFlow";
@@ -38,11 +39,14 @@ export default function App() {
 }
 
 function AppContent() {
-  const { userProfile, isAuthLoading } = useApp();
+  const { userProfile, isAuthLoading, darkMode } = useApp();
   const [activeScreen, setActiveScreen] = useState<Screen>("home");
   const [preselectedRecipient, setPreselectedRecipient] = useState<Recipient | null>(null);
   const [pinUnlocked, setPinUnlocked] = useState(false);
   const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
+  const theme = getTheme(darkMode);
+
+
 
   React.useEffect(() => {
     if (!userProfile) {
@@ -68,16 +72,16 @@ function AppContent() {
 
   if (isAuthLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc" }}>
-        <ActivityIndicator size="large" color="#10B981" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.background }}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   if (!userProfile || !userProfile.emailVerified) {
     return (
-      <View style={styles.appContainer}>
-        <StatusBar style="dark" />
+      <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
+        <StatusBar style={darkMode ? "light" : "dark"} />
         <AuthScreen />
       </View>
     );
@@ -85,8 +89,8 @@ function AppContent() {
 
   if (userProfile.pin && !pinUnlocked) {
     return (
-      <View style={styles.appContainer}>
-        <StatusBar style="dark" />
+      <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
+        <StatusBar style={darkMode ? "light" : "dark"} />
         <PinEntryScreen 
           onUnlock={() => setPinUnlocked(true)} 
           onLogout={handleLogout} 
@@ -99,8 +103,8 @@ function AppContent() {
   const showFab = !HIDE_FAB.includes(activeScreen) && !showPinRemovalEntry;
 
   return (
-    <View style={styles.appContainer}>
-      <StatusBar style="dark" />
+    <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
+      <StatusBar style={darkMode ? "light" : "dark"} />
       <View style={styles.safeArea}>
         <View style={styles.screenContent}>
           {activeScreen === "home" && (
@@ -160,7 +164,6 @@ function AppContent() {
 const styles = StyleSheet.create({
   appContainer: {
     flex: 1,
-    backgroundColor: "#f8fafc",
   },
   safeArea: {
     flex: 1,

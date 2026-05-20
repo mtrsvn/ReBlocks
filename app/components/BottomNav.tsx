@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Home, UserCheck, Receipt, User } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import { useTheme } from "../context";
 
 type Screen = "home" | "send" | "beneficiaries" | "history" | "profile" | "ai-chat";
 
@@ -32,6 +33,7 @@ const TAB_WIDTH = INNER_WIDTH / 4;
 
 export function BottomNav({ active, onNavigate }: BottomNavProps) {
   const activeIndex = navItems.findIndex((item) => item.id === active);
+  const theme = useTheme();
   
   
   const slideAnim = useRef(new Animated.Value(activeIndex !== -1 ? activeIndex : 0)).current;
@@ -80,7 +82,7 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
   });
 
   return (
-    <View style={styles.navContainer}>
+    <View style={[styles.navContainer, { backgroundColor: theme.surface }]}>
       
       <Animated.View
         style={[
@@ -144,9 +146,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#ffffff",
     borderRadius: 24,
-    shadowColor: "#0f172a",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 12,
   },
