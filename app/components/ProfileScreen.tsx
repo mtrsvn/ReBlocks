@@ -30,6 +30,7 @@ import {
   Plus,
   Building2,
   Moon,
+  Key,
 } from "lucide-react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
@@ -38,6 +39,8 @@ import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
 import { PinEntryScreen } from "./PinEntryScreen";
 import * as Haptics from "expo-haptics";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../firebase";
 
 interface ProfileScreenProps {
   onLogout?: () => void;
@@ -184,6 +187,25 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
     {
       title: "Security",
       items: [
+        {
+          icon: Key,
+          label: "Reset Password",
+          sublabel: "Send reset link to email",
+          color: "#10B981",
+          onPress: async () => {
+            if (!userProfile?.email) {
+              Alert.alert("Error", "Email not found in your profile.");
+              return;
+            }
+            try {
+              await sendPasswordResetEmail(auth, userProfile.email);
+              Alert.alert("Success", `Password reset link sent to ${userProfile.email}`);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to send reset email.");
+            }
+          },
+        },
         {
           icon: Lock,
           label: hasPin ? "Change PIN" : "Setup your PIN",
