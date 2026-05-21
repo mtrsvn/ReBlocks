@@ -9,6 +9,7 @@ import {
   Share,
   Platform,
   ActivityIndicator,
+  Clipboard,
 } from "react-native";
 import {
   Search,
@@ -18,6 +19,8 @@ import {
   Building2,
   ExternalLink,
   X,
+  Copy,
+  Check,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Transaction, useTheme } from "../context";
@@ -53,6 +56,7 @@ export function TransactionHistory() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -226,14 +230,29 @@ export function TransactionHistory() {
 
               <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>TRANSACTION ID</Text>
-                <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedTransaction.id}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedTransaction.id}</Text>
+                  <TouchableOpacity onPress={() => {
+                    Clipboard.setString(selectedTransaction.id);
+                    setShowCopiedToast(true);
+                    setTimeout(() => setShowCopiedToast(false), 2000);
+                  }}>
+                    <Copy size={14} color="#10B981" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.detailLabel}>TXHASH</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Text style={styles.hashText}>0x71C7...3aF</Text>
-                  <ExternalLink size={10} color="#10B981" />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.detailMono, { color: theme.textSecondary }]}>0x71C7...3aF</Text>
+                  <TouchableOpacity onPress={() => {
+                    Clipboard.setString("0x71C7...3aF");
+                    setShowCopiedToast(true);
+                    setTimeout(() => setShowCopiedToast(false), 2000);
+                  }}>
+                    <Copy size={14} color="#10B981" />
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -253,6 +272,15 @@ export function TransactionHistory() {
           </View>
         )}
       </BottomSheet>
+
+      {showCopiedToast && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toast}>
+            <Check size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text style={styles.toastText}>Copied!</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -484,5 +512,31 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
     zIndex: 999,
+  },
+  toastContainer: {
+    position: "absolute",
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toast: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  toastText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "700",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { Bot } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -47,6 +48,11 @@ function AppContent() {
   const [twoFactorUnlocked, setTwoFactorUnlocked] = useState(false);
   const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
   const theme = getTheme(darkMode);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [prevScreen, setPrevScreen] = useState<Screen>("home");
+
+  const screenOrder: Screen[] = ["home", "send", "beneficiaries", "history", "profile", "ai-chat"];
 
 
 
@@ -66,7 +72,42 @@ function AppContent() {
 
   const navigate = (screen: Screen, recipient: Recipient | null = null) => {
     setPreselectedRecipient(recipient);
-    setActiveScreen(screen);
+    
+    const prevIndex = screenOrder.indexOf(prevScreen);
+    const newIndex = screenOrder.indexOf(screen);
+    const isForward = newIndex > prevIndex;
+    const slideDistance = 30;
+    
+    // Fade out current screen
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: isForward ? -slideDistance : slideDistance,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setPrevScreen(screen);
+      setActiveScreen(screen);
+      // Fade in new screen from opposite direction
+      slideAnim.setValue(isForward ? slideDistance : -slideDistance);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
   };
 
   const handleLogout = async () => {
@@ -126,7 +167,15 @@ function AppContent() {
     <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
       <StatusBar style={darkMode ? "light" : "dark"} />
       <View style={styles.safeArea}>
-        <View style={styles.screenContent}>
+        <Animated.View 
+          style={[
+            styles.screenContent,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateX: slideAnim }],
+            },
+          ]}
+        >
           {activeScreen === "home" && (
             <HomeScreen
               onSendMoney={() => navigate("send")}
@@ -150,7 +199,7 @@ function AppContent() {
           {activeScreen === "ai-chat" && (
             <AIChatScreen onBack={() => navigate("home")} />
           )}
-        </View>
+        </Animated.View>
 
         
         {showNav && showFab && (

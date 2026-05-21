@@ -21,6 +21,7 @@ import {
   User,
   Check,
   ChevronDown,
+  MoreVertical,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Recipient, useTheme } from "../context";
@@ -165,26 +166,33 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         
         <View style={{ gap: 12 }}>
           {filtered.map((r) => (
-            <AnimatedButton
-              key={r.id}
-              onPress={() => setSelectedRecipient(r)}
-              style={[styles.recipientCard, { backgroundColor: theme.surface }]}
-            >
-              <View style={styles.avatarWrapper}>
-                <User size={18} color="#ffffff" />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.recipientName, { color: theme.text }]} numberOfLines={1}>
-                  {r.name}
-                </Text>
-                <View style={styles.recipientSubRow}>
-                  <Text style={styles.flagText}>{getCountryFlag(r.countryCode)}</Text>
-                  <Text style={styles.bankNameText} numberOfLines={1}>
-                    {r.bankName}
-                  </Text>
+            <View key={r.id} style={[styles.recipientCard, { backgroundColor: theme.surface }]}>
+              <AnimatedButton
+                onPress={() => setSelectedRecipient(r)}
+                style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+              >
+                <View style={styles.avatarWrapper}>
+                  <User size={18} color="#ffffff" />
                 </View>
-              </View>
-            </AnimatedButton>
+                <View style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
+                  <Text style={[styles.recipientName, { color: theme.text }]} numberOfLines={1}>
+                    {r.name}
+                  </Text>
+                  <View style={styles.recipientSubRow}>
+                    <Text style={styles.flagText}>{getCountryFlag(r.countryCode)}</Text>
+                    <Text style={styles.bankNameText} numberOfLines={1}>
+                      {r.bankName}
+                    </Text>
+                  </View>
+                </View>
+              </AnimatedButton>
+              <TouchableOpacity
+                onPress={() => setSelectedRecipient(r)}
+                style={styles.menuBtn}
+              >
+                <MoreVertical size={18} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
           ))}
 
           {filtered.length === 0 && (
@@ -731,6 +739,14 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "800",
+  },
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
   },
   
   pickerModalOverlay: {

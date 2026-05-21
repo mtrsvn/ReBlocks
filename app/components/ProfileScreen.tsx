@@ -44,7 +44,7 @@ import { AnimatedButton } from "./AnimatedButton";
 import { BottomSheet } from "./BottomSheet";
 import { PinEntryScreen } from "./PinEntryScreen";
 import * as Haptics from "expo-haptics";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { auth } from "../firebase";
 import QRCode from "react-native-qrcode-svg";
 import * as OTPAuth from "otpauth";
@@ -55,7 +55,7 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps) {
-  const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile, darkMode, setDarkMode, addFundingSource, deleteFundingSource, primaryPaymentId, setPrimaryPaymentId } = useApp();
+  const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile, darkMode, setDarkMode, addFundingSource, deleteFundingSource, primaryPaymentId, setPrimaryPaymentId, transactions } = useApp();
   const theme = useTheme();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -63,6 +63,13 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
   const [showKycModal, setShowKycModal] = useState(false);
   const [kycLoading, setKycLoading] = useState(false);
   const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
+
+  // States for password verification
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // States for Add Payment Method
   const [showAddPayment, setShowAddPayment] = useState(false);
@@ -106,6 +113,10 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
   const isVerified = userProfile?.KYCVerified || false;
   
   const hasPin = userProfile?.pin || false;
+  
+  // Calculate transfer stats
+  const totalTransfers = transactions.filter(t => t.type === 'send').length;
+  const totalReceived = transactions.filter(t => t.type === 'receive').length;
   const pinSetupAt = userProfile?.pinsetup || null;
 
   let pinSublabel = "Enhance your security";
@@ -274,12 +285,10 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           sublabel: pinSublabel,
           color: "#10B981",
           onPress: () => {
-            setCurrentPin("");
-            setNewPin("");
-            setConfirmPin("");
-            setPinError("");
-            setPinSuccess(false);
-            setShowPin(true);
+            setPendingAction("pin");
+            setPasswordInput("");
+            setPasswordError("");
+            setShowPasswordModal(true);
           },
         },
         {
@@ -291,26 +300,10 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           toggleVal: twoFactor,
           onToggle: (val: boolean) => {
             if (val) {
-              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-              let randomBase32 = '';
-              for (let i = 0; i < 32; i++) {
-                randomBase32 += chars.charAt(Math.floor(Math.random() * chars.length));
-              }
-              const secret = OTPAuth.Secret.fromBase32(randomBase32);
-              
-              const uri = new OTPAuth.TOTP({
-                issuer: "ReBlocks",
-                label: userProfile?.email || "User",
-                algorithm: "SHA1",
-                digits: 6,
-                period: 30,
-                secret: secret,
-              }).toString();
-              setTotpSecret(secret.base32);
-              setTotpUri(uri);
-              setTotpVerifyCode("");
-              setTotpError("");
-              setShowTwoFactorSetup(true);
+              setPendingAction("2fa");
+              setPasswordInput("");
+              setPasswordError("");
+              setShowPasswordModal(true);
             } else {
               Alert.alert("Disable 2FA", "Are you sure you want to disable Two-Factor Authentication?", [
                 { text: "Cancel", style: "cancel" },
@@ -330,8 +323,15 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           toggle: true,
           toggleVal: biometric,
           onToggle: async (val: boolean) => {
-            setBiometric(val);
-            await updateUserProfile({ biometricEnabled: val });
+            if (val) {
+              setPendingAction("biometric");
+              setPasswordInput("");
+              setPasswordError("");
+              setShowPasswordModal(true);
+            } else {
+              setBiometric(val);
+              await updateUserProfile({ biometricEnabled: val });
+            }
           },
         },
       ],
@@ -441,7 +441,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           
           <View style={styles.statsGrid}>
             {[
-              { label: "Transfers", value: "0" },
+              { label: "Transfers", value: totalTransfers.toString() },
               { label: "Member Since", value: userProfile?.createdAt ? new Date(userProfile.createdAt).getFullYear().toString() : "2024" },
             ].map(({ label, value }) => (
               <View key={label} style={styles.statCol}>
@@ -1084,6 +1084,121 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         </View>
       </BottomSheet>
 
+      {/* Password Verification Modal */}
+      <BottomSheet
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPasswordInput("");
+          setPasswordError("");
+          setPendingAction(null);
+        }}
+        title="Verify Password"
+      >
+        <View style={styles.modalForm}>
+          <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
+            Enter your password to continue with this security action.
+          </Text>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>PASSWORD</Text>
+            <View style={styles.passwordInputWrapper}>
+              <TextInput
+                value={passwordInput}
+                onChangeText={setPasswordInput}
+                secureTextEntry={!showPassword}
+                style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text, flex: 1, paddingRight: 40 }]}
+                placeholder="Enter your password"
+                placeholderTextColor={theme.textSecondary}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeToggle}>
+                <Eye size={18} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            {passwordError !== "" && (
+              <Text style={styles.modalError}>{passwordError}</Text>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.modalSaveBtnWrapper}
+            onPress={async () => {
+              if (!passwordInput) {
+                setPasswordError("Please enter your password");
+                return;
+              }
+              
+              try {
+                // Re-authenticate user with actual password verification
+                const user = auth.currentUser;
+                if (!user || !user.email) {
+                  setPasswordError("Authentication error");
+                  return;
+                }
+                
+                // Create credential with email and password
+                const credential = EmailAuthProvider.credential(user.email, passwordInput);
+                
+                // Re-authenticate the user
+                await reauthenticateWithCredential(user, credential);
+                
+                // Password verified successfully, proceed with action
+                setShowPasswordModal(false);
+                setPasswordInput("");
+                setPasswordError("");
+                
+                // Execute pending action
+                if (pendingAction === "pin") {
+                  setCurrentPin("");
+                  setNewPin("");
+                  setConfirmPin("");
+                  setPinError("");
+                  setPinSuccess(false);
+                  setShowPin(true);
+                } else if (pendingAction === "2fa") {
+                  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+                  let randomBase32 = '';
+                  for (let i = 0; i < 32; i++) {
+                    randomBase32 += chars.charAt(Math.floor(Math.random() * chars.length));
+                  }
+                  const secret = OTPAuth.Secret.fromBase32(randomBase32);
+                  
+                  const uri = new OTPAuth.TOTP({
+                    issuer: "ReBlocks",
+                    label: userProfile?.email || "User",
+                    algorithm: "SHA1",
+                    digits: 6,
+                    period: 30,
+                    secret: secret,
+                  }).toString();
+                  setTotpSecret(secret.base32);
+                  setTotpUri(uri);
+                  setTotpVerifyCode("");
+                  setTotpError("");
+                  setShowTwoFactorSetup(true);
+                } else if (pendingAction === "biometric") {
+                  setBiometric(true);
+                  await updateUserProfile({ biometricEnabled: true });
+                }
+                
+                setPendingAction(null);
+              } catch (error: any) {
+                console.error("Password verification error:", error);
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                  setPasswordError("Incorrect password");
+                } else if (error.code === 'auth/too-many-requests') {
+                  setPasswordError("Too many attempts. Please try again later.");
+                } else {
+                  setPasswordError("Authentication failed. Please try again.");
+                }
+              }
+            }}
+          >
+            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+              <Text style={styles.modalSaveBtnText}>Verify</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
       <BottomSheet
         isOpen={showCurrencySelector}
         onClose={() => setShowCurrencySelector(false)}
@@ -1614,6 +1729,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginLeft: 4,
   },
+  modalDescription: {
+    fontSize: 12,
+    color: "#64748b",
+    marginBottom: 16,
+    lineHeight: 18,
+  },
   modalInput: {
     backgroundColor: "#f8fafc",
     borderRadius: 12,
@@ -1624,6 +1745,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     borderWidth: 1,
     borderColor: "#e2e8f0",
+  },
+  modalError: {
+    fontSize: 11,
+    color: "#ef4444",
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  passwordInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
+  },
+  eyeToggle: {
+    position: "absolute",
+    right: 12,
+    padding: 8,
   },
   modalValueBox: {
     backgroundColor: "#f8fafc",

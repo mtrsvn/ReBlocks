@@ -9,6 +9,7 @@ import {
   Share,
   Platform,
   Dimensions,
+  Clipboard,
 } from "react-native";
 import {
   ArrowLeft,
@@ -25,6 +26,7 @@ import {
   QrCode,
   X,
   Check,
+  Copy,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -55,6 +57,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
     fundingSources,
     exchangeRates,
     addTransaction,
+    addRecipient,
     activeFundingSourceId,
     defaultCurrency,
   } = useApp();
@@ -127,6 +130,23 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
       currency: newCountry.currency,
     };
 
+    // Automatically save recipient if not already saved
+    if (!selectedRecipient) {
+      const existingRecipient = recipients.find(
+        (r) => r.name.toLowerCase() === newName.toLowerCase() && r.bankName.toLowerCase() === newBank.toLowerCase()
+      );
+      if (!existingRecipient) {
+        addRecipient({
+          name: newName,
+          bankName: newBank,
+          countryCode: newCountry.code.toLowerCase(),
+          currency: newCountry.currency,
+          accountNumber: newAccountNumber || "",
+          type: newBank.toLowerCase().includes("bank") ? "bank" : "wallet",
+        });
+      }
+    }
+
     addTransaction({
       type: "send",
       amount: totalToPay,
@@ -159,6 +179,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
 const [l2Status, setL2Status] = useState("");
 const [showTxHash, setShowTxHash] = useState(false);
+const [showCopiedToast, setShowCopiedToast] = useState(false);
 
 useEffect(() => {
   if (step === 4) {
@@ -619,9 +640,19 @@ useEffect(() => {
             <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Transaction ID</Text>
-                <Text style={[styles.calcValBold, { color: theme.text }]}>
-                  REM-{Math.floor(Math.random() * 900000) + 100000}
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.calcMono, { color: theme.text }]}>
+                    REM-{Math.floor(Math.random() * 900000) + 100000}
+                  </Text>
+                  <TouchableOpacity onPress={() => {
+                    const txId = `REM-${Math.floor(Math.random() * 900000) + 100000}`;
+                    Clipboard.setString(txId);
+                    setShowCopiedToast(true);
+                    setTimeout(() => setShowCopiedToast(false), 2000);
+                  }}>
+                    <Copy size={14} color="#10B981" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.calcRow}>
@@ -650,10 +681,20 @@ useEffect(() => {
 
                         <View style={styles.calcRow}>
               <Text style={styles.calcLabel}>Tx Hash</Text>
-
-              <Text style={[styles.calcHash, { color: theme.primary}]}>
-                {showTxHash ? "0x5f9a...8d2e" : "            "}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={[styles.calcMono, { color: theme.primary }]}>
+                  {showTxHash ? "0x5f9a...8d2e" : "            "}
+                </Text>
+                {showTxHash && (
+                  <TouchableOpacity onPress={() => {
+                    Clipboard.setString("0x5f9a...8d2e");
+                    setShowCopiedToast(true);
+                    setTimeout(() => setShowCopiedToast(false), 2000);
+                  }}>
+                    <Copy size={14} color="#10B981" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
             </View>
             
@@ -683,6 +724,15 @@ useEffect(() => {
           </View>
         )}
       </ScrollView>
+
+      {showCopiedToast && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toast}>
+            <Check size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text style={styles.toastText}>Copied!</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1029,6 +1079,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#2d3748",
   },
+  calcMono: {
+    fontSize: 10,
+    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
+    color: "#718096",
+  },
   calcDivider: {
     height: 1,
     backgroundColor: "rgba(163, 177, 198, 0.1)",
@@ -1167,6 +1222,32 @@ const styles = StyleSheet.create({
     color: "#10B981",
     fontSize: 13,
     fontWeight: "800",
+  },
+  toastContainer: {
+    position: "absolute",
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toast: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  toastText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "700",
   },
   calcWeb3Header: {
     fontSize: 9,

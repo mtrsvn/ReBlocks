@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Clipboard,
 } from "react-native";
 import {
   Send,
@@ -31,6 +32,8 @@ import {
   ArrowRightLeft,
   UserCheck,
   Receipt,
+  Copy,
+  Check,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Transaction } from "../context";
@@ -74,6 +77,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     transactions,
     defaultCurrency,
     exchangeRates,
+    userProfile,
   } = useApp();
   const theme = useTheme();
 
@@ -95,33 +99,74 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const notifications = [
-    {
-      id: "n1",
-      title: "Transfer Completed",
-      body: `Your transfer of ${curSymbol}${defaultCurrency === "USD" ? "27.00" : "1,500"} to Maria Mendoza was completed successfully.`,
-      time: "2 hours ago",
+  // Calculate transfer stats
+  const allTransfers = transactions.filter(t => t.type === 'send').slice(0, 5); // Show last 5 transfers
+  
+  // Get user's country currency
+  const userCountry = COUNTRIES.find(c => c.name === userProfile?.country);
+  const userCurrency = userCountry?.currency || defaultCurrency;
+  
+  // Calculate USD to user currency rate
+  // The API returns rates relative to PHP as base (PHP = 1)
+  // So USD rate is exchangeRates['USD'] = 0.018 (1 PHP = 0.018 USD)
+  // Therefore 1 USD = 1 / exchangeRates['USD'] PHP
+  const usdToPhpRate = 1 / (exchangeRates['USD'] || 0.018);
+  let rateDisplay = '';
+  
+  if (userCurrency === 'PHP') {
+    rateDisplay = `1 USD = ${formatFXRate(usdToPhpRate)} PHP`;
+  } else if (userCurrency === 'USD') {
+    rateDisplay = '1 USD = 1.00 USD';
+  } else {
+    // For other currencies, convert via PHP: USD -> PHP -> target currency
+    const currencyRate = exchangeRates[userCurrency] || 1;
+    const usdToTargetRate = usdToPhpRate * currencyRate;
+    rateDisplay = `1 USD = ${formatFXRate(usdToTargetRate)} ${userCurrency}`;
+  }
+
+  // Build notifications from individual transfers
+  const transferNotifications = allTransfers.map((transfer, index) => {
+    const transferDate = new Date(transfer.date);
+    const now = new Date();
+    const diffMs = now.getTime() - transferDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    let timeDisplay = "";
+    if (diffMins < 1) {
+      timeDisplay = "Just now";
+    } else if (diffMins < 60) {
+      timeDisplay = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      timeDisplay = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays < 7) {
+      timeDisplay = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else {
+      timeDisplay = transferDate.toLocaleDateString();
+    }
+    
+    return {
+      id: `t${index}`,
+      title: "Transfer",
+      body: `Sent ${curSymbol}${formatAmount(transfer.amount, transfer.currency)} to ${transfer.recipientName || 'recipient'}`,
+      time: timeDisplay,
       icon: CheckCircle,
       color: "#48bb78",
       bg: "#f0fff4",
-    },
+    };
+  });
+
+  const notifications = [
+    ...transferNotifications,
     {
-      id: "n2",
-      title: "Special Rate Alert",
-      body: "USD/PHP is at a 30-day high! Send money now to get the best value.",
-      time: "5 hours ago",
+      id: "rate",
+      title: "Exchange Rate Update",
+      body: `Current rate for ${userCountry?.name || 'your country'}: ${rateDisplay}. Rates update every 30 seconds.`,
+      time: "Just now",
       icon: Info,
       color: "#10B981",
       bg: "#d1fae5",
-    },
-    {
-      id: "n3",
-      title: "System Update",
-      body: "We've upgraded our systems to make your Morph L2 wallet transfers even faster.",
-      time: "1 day ago",
-      icon: Bell,
-      color: "#3182ce",
-      bg: "#ebf8ff",
     },
   ];
 
@@ -132,6 +177,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   const [readIds, setReadIds] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFundingSourceId, setSelectedFundingSourceId] = useState("");
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   useEffect(() => {
     if (fundingSources.length === 0) {
@@ -235,7 +281,11 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             <Text style={[styles.headerName, { color: theme.text }]}>Carlos Mendoza</Text>
           </View>
           <AnimatedButton
-            onPress={() => setShowNotifications(true)}
+            onPress={() => {
+              setShowNotifications(true);
+              // Mark all notifications as read
+              setReadIds(notifications.map(n => n.id));
+            }}
             style={styles.bellBtn}
           >
             <Bell size={20} color={theme.primary} />
@@ -379,7 +429,9 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                     <Text style={[styles.txAmt, { color: theme.text }]}>
                       {curSymbol}{formatAmount(tx.amount, tx.currency)}
                     </Text>
-                    <Text style={styles.completedText}>COMPLETED</Text>
+                    <View style={styles.completedBadge}>
+                      <Text style={styles.completedText}>COMPLETED</Text>
+                    </View>
                   </View>
                 </AnimatedButton>
               ))}
@@ -434,7 +486,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                   key={n.id}
                   activeOpacity={0.8}
                   onPress={() => setReadIds((prev) => [...new Set([...prev, n.id])])}
-                  style={[styles.notifCard, { opacity: isRead ? 0.6 : 1, backgroundColor: theme.surface, borderColor: theme.border }]}
+                  style={[styles.notifCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 >
                   <View style={[styles.notifIconWrapper, { backgroundColor: n.bg }]}>
                     <Icon size={18} color={n.color} />
@@ -574,9 +626,32 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 </Text>
               </View>
 
-              <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+              <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>TRANSACTION ID</Text>
-                <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedTransaction.id}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedTransaction.id}</Text>
+                  <TouchableOpacity onPress={() => {
+                    Clipboard.setString(selectedTransaction.id);
+                    setShowCopiedToast(true);
+                    setTimeout(() => setShowCopiedToast(false), 2000);
+                  }}>
+                    <Copy size={14} color="#10B981" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                <Text style={styles.detailLabel}>TXHASH</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.detailMono, { color: theme.textSecondary }]}>0x{selectedTransaction.id.slice(0, 6)}...{selectedTransaction.id.slice(-4)}</Text>
+                  <TouchableOpacity onPress={() => {
+                    Clipboard.setString("0x" + selectedTransaction.id.slice(0, 6) + "..." + selectedTransaction.id.slice(-4));
+                    setShowCopiedToast(true);
+                    setTimeout(() => setShowCopiedToast(false), 2000);
+                  }}>
+                    <Copy size={14} color="#10B981" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 
@@ -596,6 +671,15 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           </View>
         )}
       </BottomSheet>
+
+      {showCopiedToast && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toast}>
+            <Check size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text style={styles.toastText}>Copied!</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1134,5 +1218,32 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
     zIndex: 999,
+  },
+  toastContainer: {
+    position: "absolute",
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+  },
+  toast: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  toastText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "700",
   },
 });
