@@ -33,6 +33,7 @@ export function TransactionHistory() {
     fundingSources,
     activeFundingSourceId,
     defaultCurrency,
+    darkMode,
   } = useApp();
   const theme = useTheme();
 
@@ -108,7 +109,7 @@ export function TransactionHistory() {
       >
         
         <View style={styles.header}>
-          <Text style={styles.headerSubtitle}>ACTIVITY RECORDS</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>ACTIVITY RECORDS</Text>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Transfer History</Text>
         </View>
 
@@ -149,11 +150,11 @@ export function TransactionHistory() {
                 </Text>
               </View>
               <View style={{ alignItems: "flex-end", gap: 3 }}>
-                <Text style={styles.txAmt}>
+                <Text style={[styles.txAmt, { color: theme.text }]}>
                   {curSymbol}{formatAmount(tx.amount, tx.currency)}
                 </Text>
-                <View style={styles.completedBadge}>
-                  <Text style={styles.completedText}>COMPLETED</Text>
+                <View style={[styles.completedBadge, { backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.15)' : '#f0fff4' }]}>
+                  <Text style={[styles.completedText, { color: '#10B981' }]}>COMPLETED</Text>
                 </View>
               </View>
             </AnimatedButton>

@@ -79,6 +79,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     defaultCurrency,
     exchangeRates,
     userProfile,
+    darkMode,
   } = useApp();
   const theme = useTheme();
 
@@ -498,8 +499,8 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                     <Text style={[styles.txAmt, { color: theme.text }]}>
                       {curSymbol}{formatAmount(tx.amount, tx.currency)}
                     </Text>
-                    <View style={styles.completedBadge}>
-                      <Text style={styles.completedText}>COMPLETED</Text>
+                    <View style={[styles.completedBadge, { backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.15)' : '#f0fff4' }]}>
+                      <Text style={[styles.completedText, { color: '#10B981' }]}>COMPLETED</Text>
                     </View>
                   </View>
                 </AnimatedButton>

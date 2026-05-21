@@ -408,8 +408,8 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       >
         
         <View style={styles.header}>
-          <Text style={styles.headerSubtitle}>ACCOUNT</Text>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>ACCOUNT</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Profile</Text>
         </View>
 
         
