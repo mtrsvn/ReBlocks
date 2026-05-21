@@ -157,7 +157,7 @@ export function TransactionHistory() {
 
           {filtered.length === 0 && (
             <View style={styles.emptyContainer}>
-              <Send size={40} color="#cbd5e1" style={{ opacity: 0.5, marginBottom: 8 }} />
+              <Send size={40} color="#9aa3b5" style={{ marginBottom: 8 }} />
               <Text style={styles.emptyText}>No transfer records found</Text>
             </View>
           )}

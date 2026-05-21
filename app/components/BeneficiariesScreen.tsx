@@ -189,7 +189,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
 
           {filtered.length === 0 && (
             <View style={styles.emptyContainer}>
-              <User size={40} color="#cbd5e1" style={{ opacity: 0.5, marginBottom: 8 }} />
+              <User size={40} color="#9aa3b5" style={{ marginBottom: 8 }} />
               <Text style={styles.emptyText}>No recipients found</Text>
             </View>
           )}

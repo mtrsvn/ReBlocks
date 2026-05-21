@@ -273,7 +273,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         
         <AnimatedButton
           onPress={() => setShowRatesDetail(true)}
-          style={[styles.flatCard, { backgroundColor: theme.surface }]}
+          style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
         >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionBadge}>LIVE FX RATES</Text>
@@ -321,7 +321,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             <AnimatedButton
               key={label}
               onPress={action}
-              style={[styles.gridBtn, { backgroundColor: theme.surface }]}
+              style={[styles.gridBtn, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
             >
               <View style={styles.actionIconWrapper}>
                 <Icon size={20} color="#10B981" />
@@ -347,7 +347,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 <AnimatedButton
                   key={tx.id}
                   onPress={() => setSelectedTransaction(tx)}
-                  style={[styles.txRow, { backgroundColor: theme.surface }]}
+                  style={[styles.txRow, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
                 >
                   <View style={styles.txIconWrapper}>
                     <Send size={18} color="#ffffff" />

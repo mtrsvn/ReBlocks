@@ -195,7 +195,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           sublabel: phone,
           color: "#10B981",
           onPress: () => {
-            setTempPhone(phone);
             setShowPhone(true);
           },
         },
@@ -333,13 +332,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           },
         },
-        {
-          icon: MapPin,
-          label: "Default Currency",
-          sublabel: defaultCurrency === "USD" ? "USD — US Dollar" : "PHP — Philippine Peso",
-          color: "#10B981",
-          onPress: () => setShowCurrencySelector(true),
-        },
+
         {
           icon: HelpCircle,
           label: "Help & Support",
@@ -699,43 +692,16 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       <BottomSheet
         isOpen={showPhone}
         onClose={() => setShowPhone(false)}
-        title="Update Phone Number"
+        title="Phone Number"
       >
-
-          <View style={styles.modalForm}>
-            <View style={styles.modalInputGroup}>
-              <Text style={styles.modalLabel}>NEW PHONE NUMBER</Text>
-              <TextInput
-                value={tempPhone}
-                onChangeText={setTempPhone}
-                style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
-                placeholder="+63 912 345 6789"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="phone-pad"
-              />
+        <View style={styles.modalForm}>
+          <View style={styles.modalInputGroup}>
+            <Text style={styles.modalLabel}>PHONE NUMBER</Text>
+            <View style={[styles.modalValueBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Text style={[styles.modalValueText, { color: theme.text }]}>{phone}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.modalSaveBtnWrapper}
-              onPress={async () => {
-                if (!tempPhone.trim()) {
-                  Alert.alert("Error", "Phone number cannot be empty.");
-                  return;
-                }
-                try {
-                  await updateUserProfile({ phone: tempPhone });
-                  setShowPhone(false);
-                  Alert.alert("Success", "Phone number updated successfully!");
-                } catch (e: any) {
-                  Alert.alert("Update Failed", e.message || "Failed to update phone number.");
-                }
-              }}
-            >
-              <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
-                <Text style={styles.modalSaveBtnText}>Update Phone</Text>
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
-
+        </View>
       </BottomSheet>
 
       <BottomSheet
