@@ -96,7 +96,9 @@ app.post('/api/didit/webhook', async (req, res) => {
   console.log('📥 [Didit Webhook] Received status update event:');
   console.log(JSON.stringify(req.body, null, 2));
 
-  const { status, vendor_data, decision } = req.body;
+  // Handle both flat and nested 'data' payloads from Didit v3
+  const payload = req.body.data || req.body;
+  const { status, vendor_data, decision } = payload;
   const verificationStatus = status || (decision ? decision.status : null);
 
   if (!vendor_data) {
@@ -106,7 +108,8 @@ app.post('/api/didit/webhook', async (req, res) => {
 
   console.log(`ℹ️ [Didit Webhook] User: ${vendor_data} | Status: ${verificationStatus}`);
 
-  if (verificationStatus === 'Approved') {
+  // Use case-insensitive check for approved
+  if (verificationStatus && verificationStatus.toLowerCase() === 'approved') {
     if (firebaseAdminInitialized) {
       try {
         const userRef = admin.firestore().collection('users').doc(vendor_data);
