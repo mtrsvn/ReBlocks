@@ -219,7 +219,6 @@ export function AuthScreen({}: AuthScreenProps) {
         emailVerified: false,
         KYCVerified: false,
         isAdmin: false,
-        kycStatus: 'pending',
         defaultCurrency: 'USD',
         createdAt: new Date().toISOString(),
         pin: false,

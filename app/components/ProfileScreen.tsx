@@ -13,6 +13,9 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 import {
   ChevronRight,
   Shield,
@@ -54,9 +57,9 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
   const theme = useTheme();
   const [refreshing, setRefreshing] = useState(false);
 
-  // States for Didit modal
-  const [showDiditModal, setShowDiditModal] = useState(false);
-  const [diditLoading, setDiditLoading] = useState(false);
+  // States for KYC modal
+  const [showKycModal, setShowKycModal] = useState(false);
+  const [kycLoading, setKycLoading] = useState(false);
   const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
 
   // Profile data values loaded from userProfile
@@ -65,8 +68,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
   const birthday = userProfile?.birthday || "1995-10-12";
   const phone = userProfile?.phone || "+63 912 345 6789";
   const email = userProfile?.email || "carlos.mendoza@email.com";
-  const isVerified = userProfile?.isVerified || false;
-  const kycStatus = userProfile?.kycStatus || "pending";
+  const isVerified = userProfile?.KYCVerified || false;
   
   const hasPin = userProfile?.pin || false;
   const pinSetupAt = userProfile?.pinsetup || null;
@@ -421,7 +423,9 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           activeOpacity={0.9}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowDiditModal(true);
+            if (!isVerified) {
+              setShowKycModal(true);
+            }
           }}
         >
           <LinearGradient
@@ -432,11 +436,11 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
               <Shield size={18} color="#ffffff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.kycTitle}>DIDIT Identity Verification</Text>
+              <Text style={styles.kycTitle}>KYC Identity Verification</Text>
               <Text style={styles.kycSub}>
                 {isVerified 
-                  ? "Identity fully verified · Unlimited transfers" 
-                  : "Tap to verify your ID using Didit KYC Protocol"}
+                  ? "Your account is fully secured and verified."
+                  : "Tap to verify your ID to secure your account"}
               </Text>
             </View>
             <View style={[styles.kycBadge, { backgroundColor: theme.background }]}>
@@ -903,9 +907,9 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       </BottomSheet>
 
       <BottomSheet
-        isOpen={showDiditModal}
-        onClose={() => setShowDiditModal(false)}
-        title="Didit ID Verification"
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        title="KYC Identity Verification"
       >
         <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={false}>
           <View style={{ paddingBottom: 24, gap: 16 }}>
@@ -913,14 +917,14 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
               <View style={{ alignItems: "center", paddingVertical: 20 }}>
                 <CheckCircle size={48} color="#10B981" style={{ marginBottom: 12 }} />
                 <Text style={{ fontSize: 16, fontWeight: "800", color: theme.text }}>Identity Fully Verified</Text>
-                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4, textAlign: "center", lineHeight: 18 }}>
-                  Thank you! Your identity has been successfully verified via Didit's decentralized compliance network.
+                <Text style={{ color: "#374151", fontSize: 14, lineHeight: 20, textAlign: "center", marginBottom: 20 }}>
+                  Thank you! Your identity has been successfully verified.
                 </Text>
               </View>
             ) : (
               <View style={{ gap: 14 }}>
-                <Text style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 20 }}>
-                  Verify your identity in seconds using <Text style={{ fontWeight: "700", color: "#10B981" }}>Didit decentralized KYC Protocol</Text>.
+                <Text style={{ color: "#374151", fontSize: 14, lineHeight: 20, textAlign: "center", marginBottom: 20 }}>
+                  Verify your identity in seconds using our <Text style={{ fontWeight: "700", color: "#10B981" }}>secure KYC Provider</Text>.
                 </Text>
 
                 <View style={{ backgroundColor: theme.background, borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#10B981", borderWidth: 1, borderColor: theme.border }}>
@@ -932,46 +936,52 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   </Text>
                 </View>
 
-                <View style={{ backgroundColor: "rgba(16, 185, 129, 0.05)", borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#10B981" }}>
-                  <Text style={{ fontWeight: "700", fontSize: 12, color: "#065f46", marginBottom: 4 }}>Requirements to make Didit live:</Text>
-                  <Text style={{ fontSize: 11, color: "#065f46", lineHeight: 16 }}>
-                    • Didit Developer Client ID & Client Secret credentials.{"\n"}
-                    • Mobile SDK/WebView setup to present the identity capture screens.{"\n"}
-                    • Backend webhook handler (e.g. Firebase Cloud Function) to receive verified status updates.
-                  </Text>
-                </View>
-
-                <Text style={{ fontSize: 12, fontStyle: "italic", color: "#94a3b8", textAlign: "center" }}>
-                  For now, we have simulated the Didit integration! You can tap below to instantly verify your profile.
+                <Text style={{ fontSize: 13, color: "#6b7280", textAlign: "center", marginBottom: 24, paddingHorizontal: 10 }}>
+                  Tap below to start your secure KYC identity verification. You will be redirected to the verification portal.
                 </Text>
 
                 <TouchableOpacity
                   style={{ width: "100%", height: 48, borderRadius: 12, overflow: "hidden" }}
                   onPress={async () => {
-                    setDiditLoading(true);
+                    const uid = userProfile?.uid || auth.currentUser?.uid;
+                    if (!uid) {
+                      Alert.alert("Error", "User ID not found. Please log in again.");
+                      return;
+                    }
+                    setKycLoading(true);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    setTimeout(async () => {
-                      try {
-                        await updateUserProfile({ 
-                          isVerified: true, 
-                          KYCVerified: true, 
-                          kycStatus: "verified" 
-                        });
-                        setDiditLoading(false);
-                        setShowDiditModal(false);
-                        Alert.alert("KYC Completed", "Your account has been fully verified successfully!");
-                      } catch (error: any) {
-                        setDiditLoading(false);
-                        Alert.alert("Verification Error", error.message);
+                    
+                    try {
+                      const API_URL = 'https://reblocks.onrender.com';
+                      const redirectUrl = Linking.createURL('kyc-complete');
+
+                      const response = await fetch(`${API_URL}/api/didit/create-session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid, callback: redirectUrl })
+                      });
+                      
+                      const result = await response.json();
+                      
+                      if (result.success && result.data && result.data.url) {
+                        setKycLoading(false); // Stop loading before opening browser
+                        // Use openAuthSessionAsync to safely intercept the redirect URL and auto-close
+                        await WebBrowser.openAuthSessionAsync(result.data.url, redirectUrl);
+                        setShowKycModal(false); // Close modal only after browser returns
+                      } else {
+                        throw new Error(result.error || "Failed to create verification session");
                       }
-                    }, 2000);
+                    } catch (error: any) {
+                      setKycLoading(false);
+                      Alert.alert("Verification Error", error.message || "Could not connect to verification provider.");
+                    }
                   }}
                 >
                   <LinearGradient colors={["#10B981", "#059669"]} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                    {diditLoading ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
+                    {kycLoading ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
                     ) : (
-                      <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>Simulate Didit KYC Scan</Text>
+                      <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>Start Verification</Text>
                     )}
                   </LinearGradient>
                 </TouchableOpacity>

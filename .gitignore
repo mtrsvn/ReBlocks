@@ -42,3 +42,9 @@ yarn-error.*
 
 # firebase credentials
 service-account.json
+
+# environment variables
+.env
+backend/.env
+backend/.env
+backend/service-account.json

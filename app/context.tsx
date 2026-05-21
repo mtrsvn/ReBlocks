@@ -66,7 +66,6 @@ export interface UserProfile {
   KYCVerified: boolean;
   isAdmin: boolean;
   isVerified: boolean;
-  kycStatus: 'pending' | 'verified' | 'failed';
   defaultCurrency: 'USD' | 'PHP';
   pin?: boolean;
   userPin?: number | null;
@@ -195,7 +194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setUserProfile(data);
             setDefaultCurrencyState(data.defaultCurrency || 'USD');
 
-            if (user.emailVerified && !data.isVerified && data.kycStatus === 'pending') {
+            if (user.emailVerified && !data.isVerified && !data.KYCVerified) {
             }
           } else {
             setUserProfile(null);

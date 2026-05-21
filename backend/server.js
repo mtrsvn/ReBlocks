@@ -13,41 +13,58 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const serviceAccountPath = path.join(__dirname, 'service-account.json');
 let firebaseAdminInitialized = false;
 
-if (fs.existsSync(serviceAccountPath)) {
+// Accept full JSON string from environment variable (easier for Render)
+const serviceAccountJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT;
+const projectId = process.env.FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined;
+
+if (serviceAccountJsonStr) {
   try {
-    const serviceAccount = require(serviceAccountPath);
+    const serviceAccount = JSON.parse(serviceAccountJsonStr);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
     firebaseAdminInitialized = true;
-    console.log('✅ [Firebase Admin] Initialized successfully with service-account.json');
+    console.log('✅ [Firebase Admin] Initialized successfully via FIREBASE_SERVICE_ACCOUNT JSON string');
+  } catch (error) {
+    console.error('❌ [Firebase Admin] JSON Initialization failed:', error.message);
+  }
+} else if (projectId && clientEmail && privateKey) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey
+      })
+    });
+    firebaseAdminInitialized = true;
+    console.log('✅ [Firebase Admin] Initialized successfully via Environment Variables');
   } catch (error) {
     console.error('❌ [Firebase Admin] Initialization failed:', error.message);
   }
 } else {
-  console.log('⚠️ [Firebase Admin] service-account.json was not found in /backend.');
-  console.log('👉 To enable live database synchronization, download your private key file from:');
-  console.log('   Firebase Console -> Project Settings -> Service Accounts -> Generate New Private Key');
-  console.log('   and save it as "/backend/service-account.json"\n');
-  
-  if (process.env.FIREBASE_PROJECT_ID) {
+  const serviceAccountPath = path.join(__dirname, 'service-account.json');
+  if (fs.existsSync(serviceAccountPath)) {
     try {
+      const serviceAccount = require(serviceAccountPath);
       admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID
+        credential: admin.credential.cert(serviceAccount)
       });
       firebaseAdminInitialized = true;
-      console.log(`ℹ️ [Firebase Admin] Initialized with Project ID: ${process.env.FIREBASE_PROJECT_ID}`);
     } catch (e) {
       console.log('⚠️ [Firebase Admin] Failed basic initialization:', e.message);
     }
+  } else {
+    console.log('⚠️ [Firebase Admin] Credentials not found in .env or service-account.json.');
   }
 }
 
 app.post('/api/didit/create-session', async (req, res) => {
-  const { uid, workflowId } = req.body;
+  const { uid, workflowId, callback } = req.body;
   const apiKey = process.env.DIDIT_API_KEY || '9bIMDMRJiozzUVtDt9rdsM1Q5E7ow70tIqFavg2PNI0';
   const finalWorkflowId = workflowId || process.env.DIDIT_WORKFLOW_ID;
 
@@ -69,7 +86,7 @@ app.post('/api/didit/create-session', async (req, res) => {
       {
         workflow_id: finalWorkflowId,
         vendor_data: uid,
-        callback: process.env.DIDIT_CALLBACK_URL || 'reblocks://kyc-complete'
+        callback: callback || process.env.DIDIT_CALLBACK_URL || 'reblocks://kyc-complete'
       },
       {
         headers: {
@@ -93,23 +110,22 @@ app.post('/api/didit/webhook', async (req, res) => {
   console.log(JSON.stringify(req.body, null, 2));
 
   const { status, vendor_data, decision } = req.body;
-  const kycStatus = status || (decision ? decision.status : null);
+  const verificationStatus = status || (decision ? decision.status : null);
 
   if (!vendor_data) {
     console.log('⚠️ [Didit Webhook] Missing vendor_data (user UID). Event skipped.');
     return res.status(200).json({ success: true, message: 'Skipped - no vendor_data' });
   }
 
-  console.log(`ℹ️ [Didit Webhook] User: ${vendor_data} | Status: ${kycStatus}`);
+  console.log(`ℹ️ [Didit Webhook] User: ${vendor_data} | Status: ${verificationStatus}`);
 
-  if (kycStatus === 'Approved') {
+  if (verificationStatus === 'Approved') {
     if (firebaseAdminInitialized) {
       try {
         const userRef = admin.firestore().collection('users').doc(vendor_data);
         await userRef.update({
           isVerified: true,
           KYCVerified: true,
-          kycStatus: 'verified',
           kycVerifiedAt: new Date().toISOString()
         });
         console.log(`🎉 [Firestore Sync] User ${vendor_data} has been updated to VERIFIED in Firestore!`);
