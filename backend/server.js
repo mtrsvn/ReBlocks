@@ -15,24 +15,11 @@ app.use(bodyParser.json());
 
 let firebaseAdminInitialized = false;
 
-// Accept full JSON string from environment variable (easier for Render)
-const serviceAccountJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT;
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined;
 
-if (serviceAccountJsonStr) {
-  try {
-    const serviceAccount = JSON.parse(serviceAccountJsonStr);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    firebaseAdminInitialized = true;
-    console.log('✅ [Firebase Admin] Initialized successfully via FIREBASE_SERVICE_ACCOUNT JSON string');
-  } catch (error) {
-    console.error('❌ [Firebase Admin] JSON Initialization failed:', error.message);
-  }
-} else if (projectId && clientEmail && privateKey) {
+if (projectId && clientEmail && privateKey) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert({
