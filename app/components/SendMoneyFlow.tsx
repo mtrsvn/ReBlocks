@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -66,7 +66,6 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(preselectedRecipient || null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
-
   
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -142,7 +141,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
     });
     setStep(4);
   };
-
+  
   const handleShare = async () => {
     try {
       await Share.share({
@@ -156,6 +155,37 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   };
 
   const stepLabels = ["Recipient", "Amount", "Review", "Done"];
+
+
+const [l2Status, setL2Status] = useState("");
+const [showTxHash, setShowTxHash] = useState(false);
+
+useEffect(() => {
+  if (step === 4) {
+    setL2Status("PENDING...");
+    setShowTxHash(false);
+
+    const timer1 = setTimeout(() => {
+      setL2Status("CONFIRMING...");
+    }, 1000);
+
+    const timer2 = setTimeout(() => {
+      setL2Status("FINALIZED");
+      setShowTxHash(false);
+    }, 3000);
+
+    const timer3 = setTimeout(() => {
+      setL2Status("DELIVERED");
+      setShowTxHash(true);
+    }, 4500);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }
+}, [step]);
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
@@ -608,38 +638,25 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 
               <View style={[styles.calcDivider, { backgroundColor: theme.border }]} />
 
-              <View style={styles.calcHeaderRow}>
-                <Zap size={13} color="#10B981" />
-                <Text style={styles.calcWeb3Header}>MORPH L2 BLOCKCHAIN RECORD</Text>
-              </View>
-
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>Network</Text>
-                <Text style={[styles.calcValBold, { color: theme.text }]}>Morph L2 Blockchain</Text>
-              </View>
-
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>Tx Hash</Text>
-                <Text style={[styles.calcHash, { color: theme.text }]}>0x5f9a...8d2e</Text>
-              </View>
-
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>L2 Gas Saved</Text>
-                <Text style={[styles.calcValBold, { color: "#10B981" }]}>0.00018 ETH ($0.58 Saved)</Text>
-              </View>
-
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>Smart Contract</Text>
-                <Text style={[styles.calcValBold, { color: theme.text }]}>0xReBlocksRemitL2</Text>
-              </View>
 
               <View style={[styles.calcRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-                <Text style={styles.calcLabel}>L2 Status</Text>
-                <View style={styles.successStatusBadge}>
-                  <Text style={styles.successStatusText}>FINALIZED (1.2s)</Text>
+                 <Text style={styles.calcLabel}>L2 Status</Text>
+                 <View style={styles.successStatusBadge}>
+                   <Text style={styles.successStatusText}>
+                     {l2Status}
+                   </Text>
+                  </View>
                 </View>
-              </View>
+
+                        <View style={styles.calcRow}>
+              <Text style={styles.calcLabel}>Tx Hash</Text>
+
+              <Text style={[styles.calcHash, { color: theme.hash_link}]}>
+                {showTxHash ? "0x5f9a...8d2e" : "            "}
+              </Text>
             </View>
+            </View>
+            
 
             
             <View style={{ width: "100%", gap: 12 }}>
