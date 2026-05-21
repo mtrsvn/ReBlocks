@@ -16,28 +16,16 @@ app.use(bodyParser.json());
 let firebaseAdminInitialized = false;
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
-const firebaseBase64 = process.env.FIREBASE_BASE64;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined;
 
-if (firebaseBase64) {
+if (projectId && clientEmail && privateKey) {
   try {
-    const serviceAccount = JSON.parse(Buffer.from(firebaseBase64, 'base64').toString('utf8'));
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    firebaseAdminInitialized = true;
-    console.log('✅ [Firebase Admin] Initialized successfully via FIREBASE_BASE64');
-  } catch (error) {
-    console.error('❌ [Firebase Admin] Initialization failed:', error.message);
-  }
-} else if (projectId && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-  // Legacy fallback
-  try {
-    const formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: formattedPrivateKey
+        clientEmail,
+        privateKey
       })
     });
     firebaseAdminInitialized = true;
@@ -134,7 +122,7 @@ app.post('/api/didit/webhook', async (req, res) => {
         return res.status(200).json({ success: true, message: 'Webhook received and processed' });
       } catch (err) {
         console.error(`❌ [Didit Webhook] Failed to update Firebase for user ${vendor_data}:`, err);
-        return res.status(500).json({ success: false, error: err.message || 'Firebase update failed' });
+        return res.status(500).json({ success: false, error: 'Firebase update failed' });
       }
     } else {
       console.error(`❌ [Didit Webhook] Firebase Admin not initialized. Cannot update user ${vendor_data}`);

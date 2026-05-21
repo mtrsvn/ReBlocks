@@ -332,7 +332,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </View>
 
         
-        <View style={{ marginTop: 32 }}>
+        <View style={{ marginTop: 20 }}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.recentTitle, { color: theme.text }]}>Recent Transfers</Text>
             <TouchableOpacity onPress={onHistory} style={styles.linkRow}>
@@ -341,7 +341,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             </TouchableOpacity>
           </View>
 
-          <View style={{ gap: 10 }}>
+          <View style={{ gap: 10, marginTop: 12 }}>
             {transactions.length > 0 &&
               transactions.slice(0, 3).map((tx) => (
                 <AnimatedButton
