@@ -41,6 +41,7 @@ import { useTheme } from "../context";
 import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const COUNTRIES = [
   { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
@@ -84,6 +85,10 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   console.log("HomeScreen rendering with theme.background:", theme.background);
 
   const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
+  const displayName = userProfile?.fullName?.trim() || "there";
+
+  const formatSourceLabel = (name: string) =>
+    name.replace(/\s+Card$/i, "").trim() || name;
 
   const formatAmount = (amt: number, txCurrency?: string) => {
     const targetCurrency = txCurrency || "PHP";
@@ -99,7 +104,66 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // Calculate transfer stats
+  const [showAccountSelector, setShowAccountSelector] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showRatesDetail, setShowRatesDetail] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [readIds, setReadIds] = useState<string[]>([]);
+  const [readIdsLoaded, setReadIdsLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const readIdsStorageKey = userProfile?.uid
+    ? `read_notification_ids_${userProfile.uid}`
+    : null;
+
+  useEffect(() => {
+    if (!readIdsStorageKey) {
+      setReadIdsLoaded(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(readIdsStorageKey);
+        if (!cancelled && saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setReadIds(parsed);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load read notifications", e);
+      } finally {
+        if (!cancelled) setReadIdsLoaded(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [readIdsStorageKey]);
+
+  const persistReadIds = (ids: string[]) => {
+    if (!readIdsStorageKey) return;
+    AsyncStorage.setItem(readIdsStorageKey, JSON.stringify(ids)).catch((e) =>
+      console.warn("Failed to save read notifications", e)
+    );
+  };
+
+  const markNotificationsRead = (
+    ids: string[] | ((prev: string[]) => string[])
+  ) => {
+    setReadIds((prev) => {
+      const next = typeof ids === "function" ? ids(prev) : ids;
+      persistReadIds(next);
+      return next;
+    });
+  };
+  const [selectedFundingSourceId, setSelectedFundingSourceId] = useState("");
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
+
+  // Calculate transfer stats - show recent transfers
   const allTransfers = transactions.filter(t => t.type === 'send').slice(0, 5); // Show last 5 transfers
   
   // Get user's country currency
@@ -124,10 +188,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     rateDisplay = `1 USD = ${formatFXRate(usdToTargetRate)} ${userCurrency}`;
   }
 
-  // Build notifications from individual transfers
+  // Check if exchange rate notification was shown today (based on user's country timezone)
+  const now = new Date();
+  const today = new Date().toDateString();
+  const rateNotifId = `rate-${today}`;
+
+  // Build notifications from transfers - always show all transfers
   const transferNotifications = allTransfers.map((transfer, index) => {
     const transferDate = new Date(transfer.date);
-    const now = new Date();
     const diffMs = now.getTime() - transferDate.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
@@ -147,7 +215,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     }
     
     return {
-      id: `t${index}`,
+      id: transfer.id || `transfer-${index}`,
       title: "Transfer",
       body: `Sent ${curSymbol}${formatAmount(transfer.amount, transfer.currency)} to ${transfer.recipientName || 'recipient'}`,
       time: timeDisplay,
@@ -157,27 +225,27 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     };
   });
 
-  const notifications = [
-    ...transferNotifications,
-    {
-      id: "rate",
-      title: "Exchange Rate Update",
-      body: `Current rate for ${userCountry?.name || 'your country'}: ${rateDisplay}. Rates update every 30 seconds.`,
-      time: "Just now",
-      icon: Info,
-      color: "#10B981",
-      bg: "#d1fae5",
-    },
-  ];
+  const rateNotification = {
+    id: rateNotifId,
+    title: "Exchange Rate Update",
+    body: `Current rate for ${userCountry?.name || 'your country'}: ${rateDisplay}. Rates update every 30 seconds.`,
+    time: "Today",
+    icon: Info,
+    color: "#10B981",
+    bg: "#d1fae5",
+  };
 
-  const [showAccountSelector, setShowAccountSelector] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showRatesDetail, setShowRatesDetail] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [readIds, setReadIds] = useState<string[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedFundingSourceId, setSelectedFundingSourceId] = useState("");
-  const [showCopiedToast, setShowCopiedToast] = useState(false);
+  const notifications = [...transferNotifications, rateNotification];
+
+  const markAllNotificationsRead = () => {
+    markNotificationsRead((prev) => [
+      ...new Set([
+        ...prev,
+        ...transferNotifications.map((n) => n.id),
+        rateNotifId,
+      ]),
+    ]);
+  };
 
   useEffect(() => {
     if (fundingSources.length === 0) {
@@ -234,7 +302,10 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
       gradient: "",
     };
 
-  const unreadCount = notifications.filter((n) => !readIds.includes(n.id)).length;
+  // Badge only reflects unread transfers — daily rate update stays in inbox but isn't a "new" alert
+  const unreadCount = readIdsLoaded
+    ? transferNotifications.filter((n) => n.id && !readIds.includes(n.id)).length
+    : 0;
 
   
   const allRates = COUNTRIES.map((c) => {
@@ -278,13 +349,12 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         <View style={styles.header}>
           <View>
             <Text style={[styles.headerWelcome, { color: theme.textSecondary }]}>WELCOME BACK</Text>
-            <Text style={[styles.headerName, { color: theme.text }]}>Carlos Mendoza</Text>
+            <Text style={[styles.headerName, { color: theme.text }]}>{displayName}</Text>
           </View>
           <AnimatedButton
             onPress={() => {
               setShowNotifications(true);
-              // Mark all notifications as read
-              setReadIds(notifications.map(n => n.id));
+              markAllNotificationsRead();
             }}
             style={styles.bellBtn}
           >
@@ -311,15 +381,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardSubtitle}>SOURCE OF FUNDS</Text>
                   <View style={styles.cardTitleRow}>
-                    <Text style={styles.cardTitle}>{primarySource.name}</Text>
+                    <Text style={styles.cardTitle}>
+                      {formatSourceLabel(primarySource.name)}
+                    </Text>
                     <ChevronDown
                       size={16}
                       color="#ffffff"
                     />
                   </View>
-                  <Text style={styles.cardProvider}>
-                    {primarySource.provider} {primarySource.type === "bank" ? "Account" : "Card"}
-                  </Text>
                 </View>
                 <View style={styles.connectedBadge}>
                   <Text style={styles.connectedText}>CONNECTED</Text>
@@ -480,12 +549,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
           >
             {notifications.map((n) => {
               const Icon = n.icon;
-              const isRead = readIds.includes(n.id);
+              const isRead = n.id && readIds && readIds.includes(n.id);
               return (
                 <TouchableOpacity
                   key={n.id}
                   activeOpacity={0.8}
-                  onPress={() => setReadIds((prev) => [...new Set([...prev, n.id])])}
+                  onPress={() =>
+                    markNotificationsRead((prev) => [...new Set([...prev, n.id])])
+                  }
                   style={[styles.notifCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 >
                   <View style={[styles.notifIconWrapper, { backgroundColor: n.bg }]}>
@@ -554,9 +625,8 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                   <Icon size={18} color="#10B981" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.popupDropdownName, { color: theme.text }]}>{source.name}</Text>
-                  <Text style={styles.popupDropdownSub}>
-                    {source.provider} · •••• {source.last4}
+                  <Text style={[styles.popupDropdownName, { color: theme.text }]}>
+                    {formatSourceLabel(source.name)}
                   </Text>
                 </View>
                 {isActive && <CheckCircle size={18} color="#10B981" />}
