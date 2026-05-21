@@ -16,16 +16,28 @@ app.use(bodyParser.json());
 let firebaseAdminInitialized = false;
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-const privateKey = process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined;
+const firebaseBase64 = process.env.FIREBASE_BASE64;
 
-if (projectId && clientEmail && privateKey) {
+if (firebaseBase64) {
   try {
+    const serviceAccount = JSON.parse(Buffer.from(firebaseBase64, 'base64').toString('utf8'));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    firebaseAdminInitialized = true;
+    console.log('✅ [Firebase Admin] Initialized successfully via FIREBASE_BASE64');
+  } catch (error) {
+    console.error('❌ [Firebase Admin] Initialization failed:', error.message);
+  }
+} else if (projectId && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+  // Legacy fallback
+  try {
+    const formattedPrivateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId,
-        clientEmail,
-        privateKey
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: formattedPrivateKey
       })
     });
     firebaseAdminInitialized = true;
