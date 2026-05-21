@@ -113,7 +113,7 @@ export function TransactionHistory() {
           <Search size={18} color="#9aa3b5" style={{ marginRight: 10 }} />
           <TextInput
             placeholder="Search by recipient or ID..."
-            placeholderTextColor="#9aa3b5"
+            placeholderTextColor={theme.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             style={[styles.searchInput, { color: theme.text }]}

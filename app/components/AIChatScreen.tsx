@@ -762,7 +762,7 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
                 onChangeText={setInputText}
                 onSubmitEditing={() => handleSend()}
                 placeholder='Try "Send ₱1000 to Maria"'
-                placeholderTextColor="#9aa3b5"
+                placeholderTextColor={theme.textSecondary}
                 style={[styles.textInput, { color: theme.text }]}
               />
             </View>

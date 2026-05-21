@@ -278,7 +278,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   <Text style={styles.formLabel}>RECIPIENT FULL NAME</Text>
                   <TextInput
                     placeholder="e.g. Maria Santos"
-                    placeholderTextColor="#9aa3b5"
+                    placeholderTextColor={theme.textSecondary}
                     value={newName}
                     onChangeText={setNewName}
                     style={[styles.inputField, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
@@ -353,7 +353,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                   <Text style={styles.formLabel}>ACCOUNT NUMBER / PHONE</Text>
                   <TextInput
                     placeholder="e.g. 0917 123 4567"
-                    placeholderTextColor="#9aa3b5"
+                    placeholderTextColor={theme.textSecondary}
                     keyboardType="numeric"
                     value={newAccountNumber}
                     onChangeText={setNewAccountNumber}
@@ -411,7 +411,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
                 <Text style={styles.currencySymbol}>{sendCurrency}</Text>
                 <TextInput
                   placeholder="0"
-                  placeholderTextColor="#cbd5e1"
+                  placeholderTextColor={theme.textSecondary}
                   keyboardType="numeric"
                   autoFocus
                   value={sendAmount}

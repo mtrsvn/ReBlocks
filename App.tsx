@@ -22,6 +22,7 @@ import { AIChatScreen } from "./app/components/AIChatScreen";
 import { AnimatedButton } from "./app/components/AnimatedButton";
 import { AuthScreen } from "./app/components/AuthScreen";
 import { PinEntryScreen } from "./app/components/PinEntryScreen";
+import { TwoFactorVerifyScreen } from "./app/components/TwoFactorVerifyScreen";
 import { auth } from "./app/firebase";
 import { signOut } from "firebase/auth";
 
@@ -43,6 +44,7 @@ function AppContent() {
   const [activeScreen, setActiveScreen] = useState<Screen>("home");
   const [preselectedRecipient, setPreselectedRecipient] = useState<Recipient | null>(null);
   const [pinUnlocked, setPinUnlocked] = useState(false);
+  const [twoFactorUnlocked, setTwoFactorUnlocked] = useState(false);
   const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
   const theme = getTheme(darkMode);
 
@@ -51,8 +53,14 @@ function AppContent() {
   React.useEffect(() => {
     if (!userProfile) {
       setPinUnlocked(false);
-    } else if (!userProfile.pin) {
-      setPinUnlocked(true);
+      setTwoFactorUnlocked(false);
+    } else {
+      if (!userProfile.pin) {
+        setPinUnlocked(true);
+      }
+      if (!userProfile.twoFactorEnabled) {
+        setTwoFactorUnlocked(true);
+      }
     }
   }, [userProfile]);
 
@@ -87,7 +95,19 @@ function AppContent() {
     );
   }
 
-  if (userProfile.pin && !pinUnlocked) {
+  if (userProfile.twoFactorEnabled && !twoFactorUnlocked) {
+    return (
+      <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
+        <StatusBar style={darkMode ? "light" : "dark"} />
+        <TwoFactorVerifyScreen 
+          onUnlock={() => setTwoFactorUnlocked(true)} 
+          onLogout={handleLogout} 
+        />
+      </View>
+    );
+  }
+
+  if ((userProfile.pin || userProfile.biometricEnabled) && !pinUnlocked) {
     return (
       <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
         <StatusBar style={darkMode ? "light" : "dark"} />

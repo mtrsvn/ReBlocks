@@ -33,6 +33,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { AnimatedButton } from "./AnimatedButton";
 import { DatePickerModal } from "./DatePickerModal";
+import { useApp, useTheme } from "../context";
 import { auth, db } from "../firebase";
 import { 
   signInWithEmailAndPassword, 
@@ -109,6 +110,9 @@ export function AuthScreen({}: AuthScreenProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  
+  // Use theme from context, or default to light theme if outside AppProvider (though it is inside AppProvider)
+  const theme = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -345,7 +349,7 @@ export function AuthScreen({}: AuthScreenProps) {
                 <Mail size={18} color={focusedInput === "email" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                 <TextInput
                   placeholder="name@email.com"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
@@ -367,7 +371,7 @@ export function AuthScreen({}: AuthScreenProps) {
                 <Lock size={18} color={focusedInput === "password" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                 <TextInput
                   placeholder="••••••••"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.textSecondary}
                   secureTextEntry={!showLoginPassword}
                   value={password}
                   onChangeText={setPassword}
@@ -449,7 +453,7 @@ export function AuthScreen({}: AuthScreenProps) {
                 <User size={18} color={focusedInput === "fullName" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                 <TextInput
                   placeholder="John Doe"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.textSecondary}
                   value={fullName}
                   onChangeText={setFullName}
                   onFocus={() => setFocusedInput("fullName")}
@@ -492,7 +496,7 @@ export function AuthScreen({}: AuthScreenProps) {
                 <Mail size={18} color={focusedInput === "email" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                 <TextInput
                   placeholder="name@email.com"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
@@ -532,7 +536,7 @@ export function AuthScreen({}: AuthScreenProps) {
 
                   <TextInput
                     placeholder={selectedPhoneCode.placeholder}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={theme.textSecondary}
                     keyboardType="phone-pad"
                     value={phone}
                     onChangeText={(txt) => setPhone(formatPhoneNumber(txt, selectedPhoneCode.code))}
@@ -628,7 +632,7 @@ export function AuthScreen({}: AuthScreenProps) {
                 <Lock size={18} color={focusedInput === "pwd" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                 <TextInput
                   placeholder="Minimum 8 characters"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.textSecondary}
                   secureTextEntry={!showSignupPassword}
                   value={password}
                   onChangeText={setPassword}
@@ -655,7 +659,7 @@ export function AuthScreen({}: AuthScreenProps) {
                 <Lock size={18} color={focusedInput === "confirmPwd" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                 <TextInput
                   placeholder="Repeat password"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.textSecondary}
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -754,7 +758,7 @@ export function AuthScreen({}: AuthScreenProps) {
                     <Mail size={18} color={focusedInput === "forgotEmail" ? "#10B981" : "#94a3b8"} style={styles.inputIcon} />
                     <TextInput
                       placeholder="name@email.com"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={theme.textSecondary}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       value={forgotEmail}
@@ -944,7 +948,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: "#0f172a",
-    fontWeight: "700",
+    fontWeight: "600",
   },
   eyeButton: {
     padding: 6,

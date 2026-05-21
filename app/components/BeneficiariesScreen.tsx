@@ -150,7 +150,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
           <Search size={18} color="#9aa3b5" style={{ marginRight: 10 }} />
           <TextInput
             placeholder="Search by name or bank..."
-            placeholderTextColor="#9aa3b5"
+            placeholderTextColor={theme.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             style={[styles.searchInput, { color: theme.text }]}
@@ -210,7 +210,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
               value={name}
               onChangeText={setName}
               placeholder="e.g. Maria Mendoza"
-              placeholderTextColor="#9aa3b5"
+              placeholderTextColor={theme.textSecondary}
               style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
             />
           </View>
@@ -251,7 +251,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
               onChangeText={setAccount}
               keyboardType="numeric"
               placeholder="e.g. 0917 123 4567"
-              placeholderTextColor="#9aa3b5"
+              placeholderTextColor={theme.textSecondary}
               style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
             />
           </View>

@@ -8,10 +8,11 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { Delete } from "lucide-react-native";
+import { Delete, ScanFace } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useApp, useTheme } from "../context";
+import * as LocalAuthentication from "expo-local-authentication";
 
 interface PinEntryScreenProps {
   onUnlock: () => void;
@@ -25,6 +26,7 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
   const [loading, setLoading] = useState(false);
   const [storedPin, setStoredPin] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [hasHardware, setHasHardware] = useState(false);
   const { userProfile, updateUserProfile } = useApp();
   const theme = useTheme();
 
@@ -67,6 +69,46 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
     };
     loadPin();
   }, [userProfile?.userPin]);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const hw = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setHasHardware(hw && enrolled);
+
+      if (userProfile?.biometricEnabled && !forRemoval && hw && enrolled) {
+        handleBiometricAuth();
+      }
+    };
+    checkBiometrics();
+  }, []);
+
+  const handleBiometricAuth = async () => {
+    if (isAccountLocked()) return;
+    
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Unlock ReBlocks',
+          fallbackLabel: 'Use PIN',
+          disableDeviceFallback: true,
+        });
+
+        if (result.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          if ((userProfile?.pinAttempt || 0) > 0 || userProfile?.isLocked) {
+             await updateUserProfile({ pinAttempt: 0, isLocked: false, lockedUntil: null });
+          }
+          onUnlock();
+        }
+      }
+    } catch (e) {
+      console.log('Biometric auth error', e);
+    }
+  };
 
   const handlePress = (num: string) => {
     if (isAccountLocked()) {
@@ -175,6 +217,18 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
           <View key={rowIndex} style={styles.row}>
             {row.map((key, colIndex) => {
               if (key === "") {
+                if (userProfile?.biometricEnabled && hasHardware && !forRemoval) {
+                  return (
+                    <TouchableOpacity
+                      key={colIndex}
+                      style={[styles.key, { backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }]}
+                      onPress={handleBiometricAuth}
+                      disabled={loading || isAccountLocked()}
+                    >
+                      <ScanFace size={28} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                  );
+                }
                 return <View key={colIndex} style={{ width: 72, height: 72 }} />;
               }
               if (key === "delete") {

@@ -74,6 +74,10 @@ export interface UserProfile {
   pinAttempt?: number;
   isLocked?: boolean;
   lockedUntil?: string | null;
+  notifications?: boolean;
+  twoFactorEnabled?: boolean;
+  totpSecret?: string;
+  biometricEnabled?: boolean;
 }
 
 interface AppContextType {

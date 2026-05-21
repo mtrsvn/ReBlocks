@@ -41,6 +41,8 @@ import { PinEntryScreen } from "./PinEntryScreen";
 import * as Haptics from "expo-haptics";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../firebase";
+import QRCode from "react-native-qrcode-svg";
+import * as OTPAuth from "otpauth";
 
 interface ProfileScreenProps {
   onLogout?: () => void;
@@ -50,7 +52,6 @@ interface ProfileScreenProps {
 export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps) {
   const { fundingSources, defaultCurrency, setDefaultCurrency, userProfile, updateUserProfile, darkMode, setDarkMode } = useApp();
   const theme = useTheme();
-  const [biometric, setBiometric] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // States for Didit modal
@@ -93,8 +94,33 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       onRefresh();
     }
   };
-  const [notifications, setNotifications] = useState(true);
-  const [twoFactor, setTwoFactor] = useState(true);
+  const [notifications, setNotifications] = useState(userProfile?.notifications ?? true);
+  
+  useEffect(() => {
+    if (userProfile && userProfile.notifications !== undefined) {
+      setNotifications(userProfile.notifications);
+    }
+  }, [userProfile?.notifications]);
+
+  const [twoFactor, setTwoFactor] = useState(userProfile?.twoFactorEnabled ?? false);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [biometric, setBiometric] = useState(userProfile?.biometricEnabled ?? false);
+
+  useEffect(() => {
+    if (userProfile && userProfile.biometricEnabled !== undefined) {
+      setBiometric(userProfile.biometricEnabled);
+    }
+  }, [userProfile?.biometricEnabled]);
+  const [totpSecret, setTotpSecret] = useState("");
+  const [totpUri, setTotpUri] = useState("");
+  const [totpVerifyCode, setTotpVerifyCode] = useState("");
+  const [totpError, setTotpError] = useState("");
+
+  useEffect(() => {
+    if (userProfile && userProfile.twoFactorEnabled !== undefined) {
+      setTwoFactor(userProfile.twoFactorEnabled);
+    }
+  }, [userProfile?.twoFactorEnabled]);
 
   const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
@@ -223,25 +249,53 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         {
           icon: Shield,
           label: "Two-Factor Auth",
-          sublabel: "Verification via SMS",
+          sublabel: "Authenticator App",
           color: "#10B981",
           toggle: true,
           toggleVal: twoFactor,
           onToggle: (val: boolean) => {
-            setTwoFactor(val);
-            Alert.alert("Two-Factor Auth", `SMS Two-Factor Authentication has been turned ${val ? "ON" : "OFF"}.`);
+            if (val) {
+              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+              let randomBase32 = '';
+              for (let i = 0; i < 32; i++) {
+                randomBase32 += chars.charAt(Math.floor(Math.random() * chars.length));
+              }
+              const secret = OTPAuth.Secret.fromBase32(randomBase32);
+              
+              const uri = new OTPAuth.TOTP({
+                issuer: "ReBlocks",
+                label: userProfile?.email || "User",
+                algorithm: "SHA1",
+                digits: 6,
+                period: 30,
+                secret: secret,
+              }).toString();
+              setTotpSecret(secret.base32);
+              setTotpUri(uri);
+              setTotpVerifyCode("");
+              setTotpError("");
+              setShowTwoFactorSetup(true);
+            } else {
+              Alert.alert("Disable 2FA", "Are you sure you want to disable Two-Factor Authentication?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Disable", style: "destructive", onPress: async () => {
+                  await updateUserProfile({ twoFactorEnabled: false, totpSecret: "" });
+                  setTwoFactor(false);
+                }}
+              ]);
+            }
           },
         },
         {
           icon: Eye,
           label: "Biometric Login",
-          sublabel: "Face ID / Fingerprint",
-          color: "#10B981",
+          sublabel: "Face ID / Touch ID",
+          color: "#3b82f6",
           toggle: true,
           toggleVal: biometric,
-          onToggle: (val: boolean) => {
+          onToggle: async (val: boolean) => {
             setBiometric(val);
-            Alert.alert("Biometrics", `Biometric Face ID / Fingerprint login has been turned ${val ? "ON" : "OFF"}.`);
+            await updateUserProfile({ biometricEnabled: val });
           },
         },
       ],
@@ -256,9 +310,14 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           color: "#10B981",
           toggle: true,
           toggleVal: notifications,
-          onToggle: (val: boolean) => {
+          onToggle: async (val: boolean) => {
             setNotifications(val);
-            Alert.alert("Notifications", `App notifications have been ${val ? "enabled" : "disabled"}.`);
+            try {
+              await updateUserProfile({ notifications: val });
+            } catch (error) {
+              setNotifications(!val);
+              Alert.alert("Error", "Failed to update notification settings.");
+            }
           },
         },
         {
@@ -563,6 +622,66 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       </BottomSheet>
 
       <BottomSheet
+        isOpen={showTwoFactorSetup}
+        onClose={() => setShowTwoFactorSetup(false)}
+        title="Setup Authenticator App"
+      >
+        <View style={styles.modalForm}>
+          <Text style={[styles.modalLabel, { marginBottom: 16, textAlign: 'center', lineHeight: 20 }]}>
+            1. Scan this QR Code with your Authenticator App (Google Authenticator, Authy, etc.)
+          </Text>
+          <View style={{ alignItems: 'center', marginBottom: 24, backgroundColor: 'white', padding: 16, borderRadius: 12 }}>
+            {totpUri ? <QRCode value={totpUri} size={200} /> : null}
+          </View>
+          <Text style={[styles.modalLabel, { marginBottom: 8 }]}>
+            2. Enter the 6-digit code to verify
+          </Text>
+          <TextInput
+            value={totpVerifyCode}
+            onChangeText={setTotpVerifyCode}
+            style={[styles.modalInput, { backgroundColor: theme.background, borderColor: totpError ? '#ef4444' : theme.border, color: theme.text, fontSize: 24, textAlign: 'center', letterSpacing: 8 }]}
+            placeholder="000000"
+            placeholderTextColor={theme.textSecondary}
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          {totpError ? <Text style={{ color: '#ef4444', marginTop: 8, textAlign: 'center' }}>{totpError}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.modalSaveBtnWrapper, { marginTop: 24 }]}
+            onPress={async () => {
+              if (totpVerifyCode.length === 6) {
+                const totp = new OTPAuth.TOTP({
+                  issuer: "ReBlocks",
+                  label: userProfile?.email || "User",
+                  algorithm: "SHA1",
+                  digits: 6,
+                  period: 30,
+                  secret: OTPAuth.Secret.fromBase32(totpSecret),
+                });
+                
+                const delta = totp.validate({ token: totpVerifyCode, window: 1 });
+                if (delta !== null) {
+                  await updateUserProfile({ twoFactorEnabled: true, totpSecret });
+                  setTwoFactor(true);
+                  setShowTwoFactorSetup(false);
+                  Alert.alert("Success", "Two-Factor Authentication is now enabled.");
+                } else {
+                  setTotpError("Invalid verification code.");
+                }
+              } else {
+                setTotpError("Please enter a 6-digit code.");
+              }
+            }}
+          >
+            <LinearGradient colors={["#10B981", "#059669"]} style={styles.modalSaveBtn}>
+              <Text style={styles.modalSaveBtnText}>Verify & Enable</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
         isOpen={showEmail}
         onClose={() => setShowEmail(false)}
         title="Email Address"
@@ -591,7 +710,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                 onChangeText={setTempPhone}
                 style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                 placeholder="+63 912 345 6789"
-                placeholderTextColor="#9aa3b5"
+                placeholderTextColor={theme.textSecondary}
                 keyboardType="phone-pad"
               />
             </View>
@@ -668,7 +787,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                     onChangeText={setCurrentPin}
                     style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                     placeholder="••••"
-                    placeholderTextColor="#9aa3b5"
+                    placeholderTextColor={theme.textSecondary}
                     keyboardType="numeric"
                     secureTextEntry
                     maxLength={4}
@@ -682,7 +801,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   onChangeText={setNewPin}
                   style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                   placeholder="••••"
-                  placeholderTextColor="#9aa3b5"
+                  placeholderTextColor={theme.textSecondary}
                   keyboardType="numeric"
                   secureTextEntry
                   maxLength={4}
@@ -695,7 +814,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   onChangeText={setConfirmPin}
                   style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
                   placeholder="••••"
-                  placeholderTextColor="#9aa3b5"
+                  placeholderTextColor={theme.textSecondary}
                   keyboardType="numeric"
                   secureTextEntry
                   maxLength={4}
