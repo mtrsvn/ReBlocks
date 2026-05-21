@@ -485,71 +485,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           </LinearGradient>
         </TouchableOpacity>
 
-        
-        <View style={{ marginBottom: 20 }}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PAYMENT METHODS</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.addMethodBtnWrapper}
-              onPress={() => {
-                setNewCardName('');
-                setNewCardNumber('');
-                setNewCardExpiry('');
-                setNewCardCVV('');
-                setShowAddPayment(true);
-              }}
-            >
-              <LinearGradient
-                colors={["#10B981", "#059669"]}
-                style={styles.addMethodBtn}
-              >
-                <Plus size={12} color="#ffffff" style={{ marginRight: 3 }} />
-                <Text style={styles.addMethodBtnText}>Add</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
 
-          <View style={{ gap: 10 }}>
-            {fundingSources.map((source) => {
-                const isPrimary = source.id === primaryPaymentId;
-                return (
-                  <TouchableOpacity
-                    key={source.id}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setSelectedCard(source);
-                      setEditCardName(source.name);
-                    }}
-                    style={[styles.flatCardRow, { backgroundColor: theme.surface }]}
-                  >
-                    <View style={styles.methodIconWrapper}>
-                      {source.type === "bank" ? (
-                        <Building2 size={16} color="#10B981" />
-                      ) : (
-                        <CreditCard size={16} color="#10B981" />
-                      )}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.methodName, { color: theme.text }]}>{source.name}</Text>
-                      <Text style={styles.methodSub}>
-                        {source.provider} · •••• {source.last4}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      {isPrimary && (
-                        <View style={[styles.activeStatusBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                          <Text style={[styles.activeStatusText, { color: '#10B981' }]}>PRIMARY</Text>
-                        </View>
-                      )}
-                      <ChevronRight size={16} color="#b0b8c8" />
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-          </View>
-        </View>
 
         
         {settingSections.map((section) => (

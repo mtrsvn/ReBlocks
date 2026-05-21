@@ -34,6 +34,7 @@ import {
   Receipt,
   Copy,
   Check,
+  Plus,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Transaction } from "../context";
@@ -42,6 +43,7 @@ import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BuyCryptoMock } from "./BuyCryptoMock";
 
 const COUNTRIES = [
   { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
@@ -105,13 +107,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const [showAccountSelector, setShowAccountSelector] = useState(false);
+  const [showBuyCrypto, setShowBuyCrypto] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRatesDetail, setShowRatesDetail] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [readIdsLoaded, setReadIdsLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   const readIdsStorageKey = userProfile?.uid
     ? `read_notification_ids_${userProfile.uid}`
@@ -170,6 +173,9 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   // Get user's country currency
   const userCountry = COUNTRIES.find(c => c.name === userProfile?.country);
   const userCurrency = userCountry?.currency || defaultCurrency;
+  
+  // Calculate total savings
+  const totalSavings = transactions.filter(t => t.type === 'send').length * 12.50;
   
   // Calculate USD to user currency rate
   // The API returns rates relative to PHP as base (PHP = 1)
@@ -330,6 +336,20 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     }
   };
 
+  if (showBuyCrypto) {
+    return (
+      <BuyCryptoMock
+        onBack={() => setShowBuyCrypto(false)}
+        onPaymentSuccess={(hash, amount) => {
+          setWalletBalance(prev => prev + amount);
+          setShowBuyCrypto(false);
+          setShowCopiedToast(true); // Re-using toast just to show success
+          setTimeout(() => setShowCopiedToast(false), 2000);
+        }}
+      />
+    );
+  }
+
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
        {refreshing && (
@@ -369,70 +389,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </View>
 
         
-        <View style={styles.sourceCardContainer}>
-          <AnimatedButton
-            onPress={() => setShowAccountSelector(true)}
-            style={styles.primaryCardWrapper}
-          >
-            <LinearGradient
-              colors={["#10B981", "#059669"]}
-              style={styles.primaryCard}
-            >
-              <View style={styles.cardHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardSubtitle}>SOURCE OF FUNDS</Text>
-                  <View style={styles.cardTitleRow}>
-                    <Text style={styles.cardTitle}>
-                      {formatSourceLabel(primarySource.name)}
-                    </Text>
-                    <ChevronDown
-                      size={16}
-                      color="#ffffff"
-                    />
-                  </View>
-                </View>
-                <View style={styles.connectedBadge}>
-                  <Text style={styles.connectedText}>CONNECTED</Text>
-                </View>
-              </View>
 
-              <View style={styles.cardDivider} />
-
-              <View>
-                <Text style={styles.cardAccountNum}>{primarySource.accountNumber}</Text>
-              </View>
-            </LinearGradient>
-          </AnimatedButton>
-        </View>
-
-        
-        <AnimatedButton
-          onPress={() => setShowRatesDetail(true)}
-          style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
-        >
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionBadge}>LIVE FX RATES</Text>
-            <View style={styles.linkRow}>
-              <Text style={styles.linkText}>View all</Text>
-              <ChevronRight size={14} color="#10B981" />
-            </View>
-          </View>
-          <View style={styles.flagGrid}>
-            {allRates.slice(0, 4).map((r, i) => (
-              <View key={i} style={[styles.flagItem, { backgroundColor: theme.background, borderColor: theme.border }]}>
-                <Text style={styles.flagEmoji}>{r.flag}</Text>
-                <Text style={styles.pairText}>{r.pair}</Text>
-                <Text
-                  style={[styles.rateText, { color: theme.text }]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {r.symbol}{formatFXRate(r.rate)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </AnimatedButton>
 
         
         <View style={styles.actionGrid}>
@@ -465,6 +422,34 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
             </AnimatedButton>
           ))}
         </View>
+
+        <AnimatedButton
+          onPress={() => setShowRatesDetail(true)}
+          style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionBadge}>LIVE FX RATES</Text>
+            <View style={styles.linkRow}>
+              <Text style={styles.linkText}>View all</Text>
+              <ChevronRight size={14} color="#10B981" />
+            </View>
+          </View>
+          <View style={styles.flagGrid}>
+            {allRates.slice(0, 4).map((r, i) => (
+              <View key={i} style={[styles.flagItem, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                <Text style={styles.flagEmoji}>{r.flag}</Text>
+                <Text style={styles.pairText}>{r.pair}</Text>
+                <Text
+                  style={[styles.rateText, { color: theme.text }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {r.symbol}{formatFXRate(r.rate)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </AnimatedButton>
 
         
         <View style={{ marginTop: 20 }}>
@@ -599,43 +584,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
       </BottomSheet>
 
       
-      <BottomSheet
-        isOpen={showAccountSelector}
-        onClose={() => setShowAccountSelector(false)}
-        title="Select Funding Source"
-      >
-        <View style={{ gap: 12, paddingBottom: 16 }}>
-          {fundingSources.map((source) => {
-            const isActive = source.id === selectedFundingSourceId;
-            const Icon = source.type === "bank" ? Building2 : CreditCard;
-            return (
-              <TouchableOpacity
-                key={source.id}
-                activeOpacity={0.8}
-                onPress={() => {
-                  setSelectedFundingSourceId(source.id);
-                  setShowAccountSelector(false);
-                }}
-                style={[
-                  styles.popupDropdownRow,
-                  { backgroundColor: theme.background, borderColor: theme.border },
-                  isActive && styles.popupDropdownRowActive
-                ]}
-              >
-                <View style={styles.popupDropdownIconWrapper}>
-                  <Icon size={18} color="#10B981" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.popupDropdownName, { color: theme.text }]}>
-                    {formatSourceLabel(source.name)}
-                  </Text>
-                </View>
-                {isActive && <CheckCircle size={18} color="#10B981" />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </BottomSheet>
+
 
       
       <BottomSheet
@@ -781,6 +730,42 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#2d3748",
     marginTop: 2,
+  },
+  heroContainer: {
+    marginBottom: 24,
+  },
+  heroBanner: {
+    borderRadius: 24,
+    padding: 24,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  heroContent: {
+    position: 'relative',
+    zIndex: 2,
+  },
+  heroTitle: {
+    color: '#ffffff',
+    fontSize: 26,
+    fontWeight: '800',
+    lineHeight: 32,
+    marginBottom: 12,
+    maxWidth: '90%',
+  },
+  heroSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+  },
+  heroSubText: {
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   bellBtn: {
     width: 42,
