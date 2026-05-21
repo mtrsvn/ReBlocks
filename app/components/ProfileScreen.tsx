@@ -548,35 +548,6 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                   </TouchableOpacity>
                 );
               })}
-
-
-            
-            <View style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
-              <View style={styles.methodIconWrapper}>
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M20.5 11.3L12.9 3.7C12.4 3.2 11.6 3.2 11.1 3.7L3.5 11.3C3.2 11.6 3 12 3 12.4V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V12.4C21 12 20.8 11.6 20.5 11.3Z"
-                    fill="#10B981"
-                  />
-                  <Path d="M12 15L8 11L12 7L16 11L12 15Z" fill="white" />
-                </Svg>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.methodName, { color: theme.text }]}>Connect Web3 Wallet</Text>
-                <Text style={styles.methodSub}>Morph Network</Text>
-              </View>
-              <AnimatedButton
-                style={styles.connectWalletBtnWrapper}
-                onPress={() => Alert.alert("Web3 Wallet", "Connecting to a Web3 wallet (like Metamask or Rainbow Wallet) coming soon!")}
-              >
-                <LinearGradient
-                  colors={["#10B981", "#059669"]}
-                  style={styles.connectWalletBtn}
-                >
-                  <Plus size={14} color="#ffffff" />
-                </LinearGradient>
-              </AnimatedButton>
-            </View>
           </View>
         </View>
 
