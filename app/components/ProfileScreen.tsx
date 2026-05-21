@@ -67,10 +67,35 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
   // States for Add Payment Method
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newCardName, setNewCardName] = useState('');
-  const [newCardLast4, setNewCardLast4] = useState('');
-  const [newCardType, setNewCardType] = useState<'bank' | 'card'>('bank');
-  const [newCardProvider, setNewCardProvider] = useState('BPI');
+  const [newCardNumber, setNewCardNumber] = useState('');
+  const [newCardExpiry, setNewCardExpiry] = useState('');
+  const [newCardCVV, setNewCardCVV] = useState('');
   const [addingCard, setAddingCard] = useState(false);
+
+  // Card detail sheet
+  const [selectedCard, setSelectedCard] = useState<import('../context').FundingSource | null>(null);
+  const [editCardName, setEditCardName] = useState('');
+
+  // Detect card network from first digits
+  const detectCardNetwork = (num: string): { name: string; type: 'card' } => {
+    const raw = num.replace(/\s/g, '');
+    if (/^4/.test(raw)) return { name: 'Visa', type: 'card' };
+    if (/^5[1-5]/.test(raw) || /^2[2-7]/.test(raw)) return { name: 'Mastercard', type: 'card' };
+    if (/^3[47]/.test(raw)) return { name: 'Amex', type: 'card' };
+    if (/^35/.test(raw)) return { name: 'JCB', type: 'card' };
+    return { name: 'Card', type: 'card' };
+  };
+
+  const formatCardNumber = (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 16);
+    return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+  };
+
+  const formatExpiry = (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 4);
+    if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2);
+    return digits;
+  };
 
   // Profile data values loaded from userProfile
   const name = userProfile?.fullName || "Carlos Mendoza";
@@ -469,9 +494,9 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
               style={styles.addMethodBtnWrapper}
               onPress={() => {
                 setNewCardName('');
-                setNewCardLast4('');
-                setNewCardType('bank');
-                setNewCardProvider('BPI');
+                setNewCardNumber('');
+                setNewCardExpiry('');
+                setNewCardCVV('');
                 setShowAddPayment(true);
               }}
             >
@@ -486,15 +511,19 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           </View>
 
           <View style={{ gap: 10 }}>
-            {fundingSources.length === 0 ? (
-              <View style={[styles.flatCardRow, { backgroundColor: theme.surface, justifyContent: 'center', paddingVertical: 20 }]}>
-                <Text style={[styles.methodSub, { textAlign: 'center', color: theme.textSecondary }]}>No payment methods yet.{"\n"}Tap "Add" to add your first card or bank.</Text>
-              </View>
-            ) : (
-              fundingSources.map((source) => {
+            {fundingSources.map((source) => {
                 const isPrimary = source.id === primaryPaymentId;
                 return (
-                  <View key={source.id} style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
+                  <TouchableOpacity
+                    key={source.id}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedCard(source);
+                      setEditCardName(source.name);
+                    }}
+                    style={[styles.flatCardRow, { backgroundColor: theme.surface }]}
+                  >
                     <View style={styles.methodIconWrapper}>
                       {source.type === "bank" ? (
                         <Building2 size={16} color="#10B981" />
@@ -508,45 +537,18 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                         {source.provider} · •••• {source.last4}
                       </Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      {/* Set as Primary */}
-                      {isPrimary ? (
-                        <View style={[styles.activeStatusBadge, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
-                          <Text style={[styles.activeStatusText, { color: "#10B981" }]}>PRIMARY</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {isPrimary && (
+                        <View style={[styles.activeStatusBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                          <Text style={[styles.activeStatusText, { color: '#10B981' }]}>PRIMARY</Text>
                         </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={async () => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            await setPrimaryPaymentId(source.id);
-                          }}
-                          style={[styles.activeStatusBadge, { backgroundColor: theme.background }]}
-                        >
-                          <Star size={10} color={theme.textSecondary} style={{ marginRight: 3 }} />
-                          <Text style={[styles.activeStatusText, { color: theme.textSecondary }]}>SET PRIMARY</Text>
-                        </TouchableOpacity>
                       )}
-                      {/* Delete */}
-                      <TouchableOpacity
-                        onPress={() => {
-                          Alert.alert(
-                            "Remove Payment Method",
-                            `Remove "${source.name}"?`,
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              { text: "Remove", style: "destructive", onPress: () => deleteFundingSource(source.id) },
-                            ]
-                          );
-                        }}
-                        style={{ padding: 4 }}
-                      >
-                        <Trash2 size={15} color="#ef4444" />
-                      </TouchableOpacity>
+                      <ChevronRight size={16} color="#b0b8c8" />
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
-              })
-            )}
+              })}
+
 
             
             <View style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
@@ -648,77 +650,172 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
       </ScrollView>
 
       
+      {/* Card Detail BottomSheet */}
+      <BottomSheet
+        isOpen={!!selectedCard}
+        onClose={() => setSelectedCard(null)}
+        title="Card Details"
+      >
+        {selectedCard && (() => {
+          const isPrimary = selectedCard.id === primaryPaymentId;
+          return (
+            <View style={styles.modalForm}>
+              {/* Card info header */}
+              <View style={[styles.flatCardRow, { backgroundColor: theme.background, marginBottom: 8 }]}>
+                <View style={styles.methodIconWrapper}>
+                  {selectedCard.type === 'bank'
+                    ? <Building2 size={18} color="#10B981" />
+                    : <CreditCard size={18} color="#10B981" />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.methodName, { color: theme.text }]}>{selectedCard.provider}</Text>
+                  <Text style={styles.methodSub}>•••• •••• •••• {selectedCard.last4}</Text>
+                </View>
+                {isPrimary && (
+                  <View style={[styles.activeStatusBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                    <Text style={[styles.activeStatusText, { color: '#10B981' }]}>PRIMARY</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Editable name */}
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalLabel}>CARD NICKNAME</Text>
+                <TextInput
+                  value={editCardName}
+                  onChangeText={setEditCardName}
+                  placeholder="e.g. My Daily Card"
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
+                />
+              </View>
+
+              {/* Set as Primary button */}
+              {!isPrimary && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    await setPrimaryPaymentId(selectedCard.id);
+                    setSelectedCard(null);
+                  }}
+                  style={[styles.primarySaveBtn, { marginTop: 4 }]}
+                >
+                  <View style={[styles.primarySaveBtnGradient, { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 1, borderColor: '#10B981', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                    <Text style={[styles.primarySaveBtnText, { color: '#10B981' }]}>Set as Primary</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Save name button */}
+              <TouchableOpacity
+                onPress={async () => {
+                  if (editCardName.trim() && editCardName.trim() !== selectedCard.name) {
+                    // Update name in Firebase
+                    const { doc, updateDoc } = await import('firebase/firestore');
+                    const { db } = await import('../firebase');
+                    const { auth } = await import('../firebase');
+                    if (auth.currentUser) {
+                      await updateDoc(doc(db, 'users', auth.currentUser.uid, 'fundingSources', selectedCard.id), { name: editCardName.trim() });
+                    }
+                  }
+                  setSelectedCard(null);
+                }}
+                style={[styles.primarySaveBtn, { marginTop: 12 }]}
+              >
+                <LinearGradient colors={["#10B981", "#059669"]} style={styles.primarySaveBtnGradient}>
+                  <Text style={styles.primarySaveBtnText}>Save Changes</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Remove */}
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    "Remove Card",
+                    `Remove "${selectedCard.name}"?`,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Remove", style: "destructive",
+                        onPress: () => {
+                          deleteFundingSource(selectedCard.id);
+                          setSelectedCard(null);
+                        }
+                      },
+                    ]
+                  );
+                }}
+                style={[styles.primarySaveBtn, { marginTop: 4 }]}
+              >
+                <View style={[styles.primarySaveBtnGradient, { backgroundColor: 'rgba(239,68,68,0.1)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                  <Trash2 size={14} color="#ef4444" style={{ marginRight: 6 }} />
+                  <Text style={[styles.primarySaveBtnText, { color: '#ef4444' }]}>Remove Card</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
+      </BottomSheet>
+
       {/* Add Payment Method BottomSheet */}
       <BottomSheet
         isOpen={showAddPayment}
         onClose={() => setShowAddPayment(false)}
-        title="Add Payment Method"
+        title="Add Your Card"
       >
         <View style={styles.modalForm}>
-          {/* Type selector */}
-          <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>TYPE</Text>
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-              {(['bank', 'card'] as const).map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  onPress={() => setNewCardType(t)}
-                  style={[
-                    styles.typeToggleBtn,
-                    newCardType === t && { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: '#10B981' },
-                    { borderColor: theme.border, backgroundColor: theme.background }
-                  ]}
-                >
-                  {t === 'bank' ? <Building2 size={14} color={newCardType === t ? '#10B981' : theme.textSecondary} /> : <CreditCard size={14} color={newCardType === t ? '#10B981' : theme.textSecondary} />}
-                  <Text style={[styles.typeToggleText, { color: newCardType === t ? '#10B981' : theme.textSecondary }]}>
-                    {t === 'bank' ? 'Bank Account' : 'Credit / Debit Card'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
 
-          {/* Provider */}
+          {/* Card Number */}
           <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>PROVIDER</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-              {(newCardType === 'bank' ? ['BPI', 'BDO', 'UnionBank', 'Metrobank', 'GCash'] : ['Visa', 'Mastercard', 'JCB', 'Amex']).map((p) => (
-                <TouchableOpacity
-                  key={p}
-                  onPress={() => setNewCardProvider(p)}
-                  style={[
-                    styles.providerChip,
-                    { borderColor: newCardProvider === p ? '#10B981' : theme.border, backgroundColor: newCardProvider === p ? 'rgba(16, 185, 129, 0.12)' : theme.background }
-                  ]}
-                >
-                  <Text style={[styles.providerChipText, { color: newCardProvider === p ? '#10B981' : theme.textSecondary }]}>{p}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Nickname */}
-          <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>NICKNAME (e.g. "My BPI Savings")</Text>
+            <Text style={styles.modalLabel}>CARD NUMBER</Text>
             <TextInput
-              value={newCardName}
-              onChangeText={setNewCardName}
-              placeholder="Card or account nickname"
+              value={newCardNumber}
+              onChangeText={(v) => setNewCardNumber(formatCardNumber(v))}
+              placeholder="1234 5678 9012 3456"
               placeholderTextColor={theme.textSecondary}
-              style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
+              keyboardType="numeric"
+              maxLength={19}
+              style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text, letterSpacing: 2 }]}
             />
           </View>
 
-          {/* Last 4 digits */}
+          {/* Expiry + CVV row */}
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={[styles.modalInputGroup, { flex: 1 }]}>
+              <Text style={styles.modalLabel}>EXPIRY DATE</Text>
+              <TextInput
+                value={newCardExpiry}
+                onChangeText={(v) => setNewCardExpiry(formatExpiry(v))}
+                placeholder="MM/YY"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="numeric"
+                maxLength={5}
+                style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
+              />
+            </View>
+            <View style={[styles.modalInputGroup, { flex: 1 }]}>
+              <Text style={styles.modalLabel}>CVV</Text>
+              <TextInput
+                value={newCardCVV}
+                onChangeText={(v) => setNewCardCVV(v.replace(/\D/g, '').slice(0, 4))}
+                placeholder="•••"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="numeric"
+                secureTextEntry
+                maxLength={4}
+                style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
+              />
+            </View>
+          </View>
+
+          {/* Card Label */}
           <View style={styles.modalInputGroup}>
-            <Text style={styles.modalLabel}>LAST 4 DIGITS</Text>
+            <Text style={styles.modalLabel}>NAME THIS CARD</Text>
             <TextInput
-              value={newCardLast4}
-              onChangeText={(v) => setNewCardLast4(v.replace(/\D/g, '').slice(0, 4))}
-              placeholder="e.g. 4321"
+              value={newCardName}
+              onChangeText={setNewCardName}
+              placeholder="e.g. My Daily Card, Travel Card..."
               placeholderTextColor={theme.textSecondary}
-              keyboardType="numeric"
-              maxLength={4}
               style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
             />
           </View>
@@ -726,22 +823,27 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           {/* Save button */}
           <TouchableOpacity
             onPress={async () => {
-              if (!newCardName.trim()) { Alert.alert('Missing Info', 'Please enter a nickname.'); return; }
-              if (newCardLast4.length !== 4) { Alert.alert('Missing Info', 'Please enter the last 4 digits.'); return; }
+              const rawNum = newCardNumber.replace(/\s/g, '');
+              if (rawNum.length < 13) { Alert.alert('Invalid Card', 'Please enter a valid card number.'); return; }
+              if (!newCardExpiry.includes('/') || newCardExpiry.length < 5) { Alert.alert('Invalid Expiry', 'Please enter a valid expiry date (MM/YY).'); return; }
+              if (newCardCVV.length < 3) { Alert.alert('Invalid CVV', 'Please enter a valid CVV.'); return; }
+              const label = newCardName.trim() || detectCardNetwork(newCardNumber).name + ' Card';
+              const net = detectCardNetwork(newCardNumber);
+              const last4 = rawNum.slice(-4);
               setAddingCard(true);
               try {
                 await addFundingSource({
-                  name: newCardName.trim(),
-                  type: newCardType,
-                  last4: newCardLast4,
-                  accountNumber: `•••• •••• •••• ${newCardLast4}`,
-                  provider: newCardProvider,
+                  name: label,
+                  type: net.type,
+                  last4,
+                  accountNumber: `•••• •••• •••• ${last4}`,
+                  provider: net.name,
                   gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 });
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 setShowAddPayment(false);
               } catch (e) {
-                Alert.alert('Error', 'Failed to add payment method. Try again.');
+                Alert.alert('Error', 'Failed to add card. Try again.');
               } finally {
                 setAddingCard(false);
               }
@@ -752,7 +854,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             <LinearGradient colors={["#10B981", "#059669"]} style={styles.primarySaveBtnGradient}>
               {addingCard
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.primarySaveBtnText}>Add Payment Method</Text>
+                : <Text style={styles.primarySaveBtnText}>Save Card</Text>
               }
             </LinearGradient>
           </TouchableOpacity>
@@ -1710,5 +1812,57 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '800',
+  },
+  cardPreview: {
+    marginBottom: 16,
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  cardPreviewGradient: {
+    padding: 20,
+    minHeight: 170,
+    justifyContent: 'space-between',
+  },
+  cardPreviewTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardPreviewNetwork: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  cardPreviewNumber: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 3,
+    textAlign: 'center',
+    marginVertical: 16,
+    fontVariant: ['tabular-nums'] as any,
+  },
+  cardPreviewBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cardPreviewMicroLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  cardPreviewValue: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

@@ -267,7 +267,6 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
               <View style={styles.cardDivider} />
 
               <View>
-                <Text style={styles.cardSubtitle}>ACCOUNT NUMBER</Text>
                 <Text style={styles.cardAccountNum}>{primarySource.accountNumber}</Text>
               </View>
             </LinearGradient>
