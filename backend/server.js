@@ -50,6 +50,13 @@ if (projectId && clientEmail && privateKey) {
   }
 }
 
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    firebaseAdminInitialized
+  });
+});
+
 app.post('/api/didit/create-session', async (req, res) => {
   const { uid, workflowId, callback } = req.body;
   const apiKey = process.env.DIDIT_API_KEY || '9bIMDMRJiozzUVtDt9rdsM1Q5E7ow70tIqFavg2PNI0';
@@ -96,23 +103,26 @@ app.post('/api/didit/webhook', async (req, res) => {
   console.log('📥 [Didit Webhook] Received status update event:');
   console.log(JSON.stringify(req.body, null, 2));
 
-  // Handle both flat and nested 'data' payloads from Didit v3
-  const payload = req.body.data || req.body;
-  const { status, vendor_data, decision } = payload;
-  const verificationStatus = status || (decision ? decision.status : null);
+  const dataObj = req.body.data || {};
+  const statusRaw = dataObj.status || req.body.status;
+  const vendorDataRaw = dataObj.vendor_data || req.body.vendor_data;
+  const decisionObj = dataObj.decision || req.body.decision;
 
-  if (!vendor_data) {
+  const verificationStatus = statusRaw || (decisionObj ? decisionObj.status : null);
+  const finalVendorData = vendorDataRaw;
+
+  if (!finalVendorData) {
     console.log('⚠️ [Didit Webhook] Missing vendor_data (user UID). Event skipped.');
     return res.status(200).json({ success: true, message: 'Skipped - no vendor_data' });
   }
 
-  console.log(`ℹ️ [Didit Webhook] User: ${vendor_data} | Status: ${verificationStatus}`);
+  console.log(`ℹ️ [Didit Webhook] User: ${finalVendorData} | Status: ${verificationStatus}`);
 
   // Use case-insensitive check for approved
   if (verificationStatus && verificationStatus.toLowerCase() === 'approved') {
     if (firebaseAdminInitialized) {
       try {
-        const userRef = admin.firestore().collection('users').doc(vendor_data);
+        const userRef = admin.firestore().collection('users').doc(finalVendorData);
         await userRef.update({
           isVerified: true,
           KYCVerified: true,
