@@ -217,16 +217,15 @@ export function AuthScreen({}: AuthScreenProps) {
         country: selectedCountry?.name || "Philippines",
         birthday: dobFormatted,
         emailVerified: false,
-        KYCVerified: false,
         isAdmin: false,
-        defaultCurrency: 'USD',
         createdAt: new Date().toISOString(),
         pin: false,
         userPin: null,
         pinsetup: null,
         pinAttempt: 0,
         isLocked: false,
-        lockedUntil: null
+        lockedUntil: null,
+        primaryPayment: null
       });
 
       // Clear signup form and show verification screen

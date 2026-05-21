@@ -72,6 +72,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     fundingSources,
     activeFundingSourceId,
     setActiveFundingSourceId,
+    primaryPaymentId,
     transactions,
     defaultCurrency,
     exchangeRates,
@@ -162,14 +163,17 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   };
 
   const primarySource =
+    fundingSources.find((fs) => fs.id === primaryPaymentId) ||
     fundingSources.find((fs) => fs.id === activeFundingSourceId) ||
     fundingSources[0] ||
     {
       id: "none",
-      name: "No funding source",
-      provider: "Connect a bank or card",
-      type: "bank",
+      name: "No Payment Method",
+      provider: "Add one in Profile",
+      type: "bank" as const,
       accountNumber: "—",
+      last4: "—",
+      gradient: "",
     };
 
   const unreadCount = notifications.filter((n) => !readIds.includes(n.id)).length;

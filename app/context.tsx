@@ -24,6 +24,7 @@ export interface FundingSource {
   accountNumber: string;
   provider: string;
   gradient: string;
+  isPrimary?: boolean;
 }
 
 export interface Recipient {
@@ -77,6 +78,8 @@ export interface UserProfile {
   twoFactorEnabled?: boolean;
   totpSecret?: string;
   biometricEnabled?: boolean;
+  createdAt?: string;
+  primaryPayment?: string | null;
 }
 
 interface AppContextType {
@@ -87,15 +90,19 @@ interface AppContextType {
   transactions: Transaction[];
   exchangeRates: { [key: string]: number };
   activeFundingSourceId: string;
+  primaryPaymentId: string;
   defaultCurrency: 'USD' | 'PHP';
   darkMode: boolean;
   setDefaultCurrency: (cur: 'USD' | 'PHP') => Promise<void>;
   setActiveFundingSourceId: (id: string) => void;
+  setPrimaryPaymentId: (id: string) => Promise<void>;
   setDarkMode: (isDark: boolean) => void;
   addRecipient: (recipient: Omit<Recipient, 'id'>) => Promise<void>;
   updateRecipient: (id: string, recipient: Partial<Recipient>) => Promise<void>;
   deleteRecipient: (id: string) => Promise<void>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => Promise<void>;
+  addFundingSource: (source: Omit<FundingSource, 'id'>) => Promise<void>;
+  deleteFundingSource: (id: string) => Promise<void>;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -108,6 +115,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [darkMode, setDarkMode] = useState(false);
   const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [activeFundingSourceId, setActiveFundingSourceId] = useState('');
+  const [primaryPaymentId, setPrimaryPaymentIdState] = useState('');
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -193,8 +201,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const data = docSnap.data() as UserProfile;
             setUserProfile(data);
             setDefaultCurrencyState(data.defaultCurrency || 'USD');
-
-            if (user.emailVerified && !data.isVerified && !data.KYCVerified) {
+            if (data.primaryPayment) {
+              setPrimaryPaymentIdState(data.primaryPayment);
             }
           } else {
             setUserProfile(null);
@@ -225,29 +233,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         const fundingSourcesCol = collection(db, "users", user.uid, "fundingSources");
-        unsubscribeFundingSources = onSnapshot(fundingSourcesCol, async (snapshot) => {
+        unsubscribeFundingSources = onSnapshot(fundingSourcesCol, (snapshot) => {
           const loadedFundingSources: FundingSource[] = [];
           snapshot.forEach((d) => {
             loadedFundingSources.push({ ...d.data(), id: d.id } as FundingSource);
           });
-
-          if (loadedFundingSources.length === 0) {
-            const defaultFS: Omit<FundingSource, 'id'>[] = [
-              { name: 'Main Savings', type: 'bank', last4: '8842', accountNumber: '0012 3456 7890 8842', provider: 'BPI', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
-              { name: 'Travel Card', type: 'card', last4: '1099', accountNumber: '4532 7890 1234 1099', provider: 'Visa', gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' },
-            ];
-            for (const fsItem of defaultFS) {
-              await addDoc(fundingSourcesCol, fsItem);
-            }
-          } else {
-            setFundingSources(loadedFundingSources);
-            setActiveFundingSourceId((prev) => {
-              if (prev && loadedFundingSources.some((fs) => fs.id === prev)) {
-                return prev;
-              }
-              return loadedFundingSources[0]?.id || '';
-            });
-          }
+          setFundingSources(loadedFundingSources);
+          setActiveFundingSourceId((prev) => {
+            if (prev && loadedFundingSources.some((fs) => fs.id === prev)) return prev;
+            return loadedFundingSources[0]?.id || '';
+          });
         });
 
       } else {
@@ -278,6 +273,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!auth.currentUser) return;
     const userDocRef = doc(db, "users", auth.currentUser.uid);
     await updateDoc(userDocRef, { defaultCurrency: cur });
+  };
+
+  const setPrimaryPaymentId = async (id: string) => {
+    if (!auth.currentUser) return;
+    setPrimaryPaymentIdState(id);
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userDocRef, { primaryPayment: id });
+  };
+
+  const addFundingSource = async (source: Omit<FundingSource, 'id'>) => {
+    if (!auth.currentUser) return;
+    const colRef = collection(db, "users", auth.currentUser.uid, "fundingSources");
+    const docRef = await addDoc(colRef, source);
+    // If it's the first card, auto-set as primary
+    if (fundingSources.length === 0) {
+      await setPrimaryPaymentId(docRef.id);
+    }
+  };
+
+  const deleteFundingSource = async (id: string) => {
+    if (!auth.currentUser) return;
+    const docRef = doc(db, "users", auth.currentUser.uid, "fundingSources", id);
+    await deleteDoc(docRef);
+    // If deleted was primary, clear primary
+    if (primaryPaymentId === id) {
+      const remaining = fundingSources.filter(fs => fs.id !== id);
+      if (remaining.length > 0) {
+        await setPrimaryPaymentId(remaining[0].id);
+      } else {
+        await setPrimaryPaymentId('');
+      }
+    }
   };
 
   const addRecipient = async (recipient: Omit<Recipient, 'id'>) => {
@@ -324,6 +351,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       exchangeRates, 
       activeFundingSourceId, 
       setActiveFundingSourceId, 
+      primaryPaymentId,
+      setPrimaryPaymentId,
       defaultCurrency, 
       setDefaultCurrency,
       darkMode,
@@ -332,6 +361,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateRecipient, 
       deleteRecipient, 
       addTransaction,
+      addFundingSource,
+      deleteFundingSource,
       updateUserProfile
     }}>
       {children}
