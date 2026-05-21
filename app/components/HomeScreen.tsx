@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -70,8 +70,6 @@ interface HomeScreenProps {
 export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScreenProps) {
   const {
     fundingSources,
-    activeFundingSourceId,
-    setActiveFundingSourceId,
     primaryPaymentId,
     transactions,
     defaultCurrency,
@@ -133,6 +131,20 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedFundingSourceId, setSelectedFundingSourceId] = useState("");
+
+  useEffect(() => {
+    if (fundingSources.length === 0) {
+      setSelectedFundingSourceId("");
+      return;
+    }
+
+    const hasSelected = selectedFundingSourceId
+      && fundingSources.some((fs) => fs.id === selectedFundingSourceId);
+    if (hasSelected) return;
+
+    setSelectedFundingSourceId(primaryPaymentId || fundingSources[0].id);
+  }, [fundingSources, primaryPaymentId, selectedFundingSourceId]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -163,8 +175,8 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   };
 
   const primarySource =
+    fundingSources.find((fs) => fs.id === selectedFundingSourceId) ||
     fundingSources.find((fs) => fs.id === primaryPaymentId) ||
-    fundingSources.find((fs) => fs.id === activeFundingSourceId) ||
     fundingSources[0] ||
     {
       id: "none",
@@ -470,14 +482,14 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
       >
         <View style={{ gap: 12, paddingBottom: 16 }}>
           {fundingSources.map((source) => {
-            const isActive = source.id === activeFundingSourceId;
+            const isActive = source.id === selectedFundingSourceId;
             const Icon = source.type === "bank" ? Building2 : CreditCard;
             return (
               <TouchableOpacity
                 key={source.id}
                 activeOpacity={0.8}
                 onPress={() => {
-                  setActiveFundingSourceId(source.id);
+                  setSelectedFundingSourceId(source.id);
                   setShowAccountSelector(false);
                 }}
                 style={[
