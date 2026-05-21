@@ -33,6 +33,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { AnimatedButton } from "./AnimatedButton";
 import { useApp, Recipient, useTheme } from "../context";
 import { getCountryFlag } from "../utils/countries";
+import { MorphCheckoutMock } from "./MorphCheckoutMock";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -69,6 +70,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(preselectedRecipient || null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showMoonPay, setShowMoonPay] = useState(false);
   
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -159,7 +161,8 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
       fundingSourceId: primarySource.id,
       estimatedArrival: "Instant",
     });
-    setStep(4);
+    
+    setShowMoonPay(true);
   };
   
   const handleShare = async () => {
@@ -180,6 +183,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
 const [l2Status, setL2Status] = useState("");
 const [showTxHash, setShowTxHash] = useState(false);
 const [showCopiedToast, setShowCopiedToast] = useState(false);
+const [txHash, setTxHash] = useState("");
 
 useEffect(() => {
   if (step === 4) {
@@ -207,6 +211,20 @@ useEffect(() => {
     };
   }
 }, [step]);
+
+  if (showMoonPay) {
+    return (
+      <MorphCheckoutMock 
+        amount={totalToPay}
+        onBack={() => setShowMoonPay(false)}
+        onPaymentSuccess={(hash) => {
+          setShowMoonPay(false);
+          setTxHash(hash);
+          setStep(4);
+        }}
+      />
+    );
+  }
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
@@ -540,24 +558,7 @@ useEffect(() => {
               Please verify the details before payment.
             </Text>
 
-            
-            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
-              <Text style={styles.sectionLabel}>FUNDING SOURCE</Text>
-              <View style={styles.fundingRow}>
-                <View style={styles.fundingIconWrapper}>
-                  <Building2 size={18} color="#10B981" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fundingName, { color: theme.text }]}>{primarySource.name}</Text>
-                  <Text style={styles.fundingProvider}>
-                    {primarySource.provider} • ***{primarySource.last4}
-                  </Text>
-                </View>
-                <Text style={styles.changeText}>SELECTED</Text>
-              </View>
-            </View>
-
-            
+            {/* Review Card */}
             <View style={[styles.flatCard, { backgroundColor: theme.surface }]}>
               <View style={styles.reviewFlowRow}>
                 <View style={styles.reviewCol}>
@@ -683,7 +684,7 @@ useEffect(() => {
               <Text style={styles.calcLabel}>Tx Hash</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Text style={[styles.calcMono, { color: theme.primary }]}>
-                  {showTxHash ? "0x5f9a...8d2e" : "            "}
+                  {showTxHash ? (txHash ? `${txHash.substring(0, 6)}...${txHash.substring(txHash.length - 4)}` : "0x5f9a...8d2e") : "            "}
                 </Text>
                 {showTxHash && (
                   <TouchableOpacity onPress={() => {
