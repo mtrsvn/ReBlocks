@@ -118,12 +118,15 @@ app.post('/api/didit/webhook', async (req, res) => {
           KYCVerified: true,
           kycVerifiedAt: new Date().toISOString()
         });
-        console.log(`🎉 [Firestore Sync] User ${vendor_data} has been updated to VERIFIED in Firestore!`);
-      } catch (error) {
-        console.error(`❌ [Firestore Sync] Failed to update Firestore user profile:`, error.message);
+        console.log(`✅ [Didit Webhook] Firebase updated for user ${vendor_data}`);
+        return res.status(200).json({ success: true, message: 'Webhook received and processed' });
+      } catch (err) {
+        console.error(`❌ [Didit Webhook] Failed to update Firebase for user ${vendor_data}:`, err);
+        return res.status(500).json({ success: false, error: 'Firebase update failed' });
       }
     } else {
-      console.log('⚠️ [Firestore Sync] Skipped - Firebase Admin is not fully initialized.');
+      console.error(`❌ [Didit Webhook] Firebase Admin not initialized. Cannot update user ${vendor_data}`);
+      return res.status(500).json({ success: false, error: 'Firebase Admin not initialized' });
     }
   }
 

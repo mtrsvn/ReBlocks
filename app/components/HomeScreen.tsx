@@ -332,7 +332,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
         </View>
 
         
-        <View style={{ marginTop: 8 }}>
+        <View style={{ marginTop: 32 }}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.recentTitle, { color: theme.text }]}>Recent Transfers</Text>
             <TouchableOpacity onPress={onHistory} style={styles.linkRow}>
