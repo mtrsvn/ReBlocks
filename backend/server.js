@@ -122,7 +122,7 @@ app.post('/api/didit/webhook', async (req, res) => {
         return res.status(200).json({ success: true, message: 'Webhook received and processed' });
       } catch (err) {
         console.error(`❌ [Didit Webhook] Failed to update Firebase for user ${vendor_data}:`, err);
-        return res.status(500).json({ success: false, error: 'Firebase update failed' });
+        return res.status(500).json({ success: false, error: err.message || 'Firebase update failed' });
       }
     } else {
       console.error(`❌ [Didit Webhook] Firebase Admin not initialized. Cannot update user ${vendor_data}`);
