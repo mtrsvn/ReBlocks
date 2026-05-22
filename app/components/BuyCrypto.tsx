@@ -124,7 +124,7 @@ export function BuyCryptoMock({ onBack, onPaymentSuccess }: BuyCryptoMockProps) 
                 You will get <Text style={{fontWeight: '700', color: theme.text}}>{receiveAmount.toFixed(4)} USDT</Text> for <Text style={{fontWeight: '700', color: theme.text}}>{amount.toFixed(2)} USD</Text>
               </Text>
               <View style={[styles.summaryRow, { marginTop: 16 }]}>
-                <Text style={styles.summarySubLabel}>{receiveAmount.toFixed(4)} USDT (@ {amount > 0 ? (amount/receiveAmount).toFixed(4) : "0.0000"} USD)</Text>
+                <Text style={styles.summarySubLabel}>{receiveAmount.toFixed(4)} USDT (@ {(amount > 0 && receiveAmount > 0) ? (amount/receiveAmount).toFixed(4) : "-"} USD)</Text>
                 <Text style={[styles.summarySubValue, { color: theme.text }]}>{amount.toFixed(2)} USD</Text>
               </View>
               <View style={styles.summaryRow}>

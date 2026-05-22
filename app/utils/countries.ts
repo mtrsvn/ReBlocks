@@ -35,15 +35,39 @@ export const PAYMENT_METHODS: { [countryCode: string]: string[] } = {
 };
 
 export function getCountryByCode(code: string) {
-  return COUNTRIES.find(c => c.code === code);
+  if (!code) return undefined;
+  const normalized = code.trim().toLowerCase();
+  return COUNTRIES.find(c => c.code.toLowerCase() === normalized || c.name.toLowerCase() === normalized);
 }
 
 export function getCountryFlag(code: string): string {
-  return COUNTRIES.find(c => c.code === code)?.flag || '🌍';
+  if (!code) return '🌍';
+  const normalized = code.trim().toLowerCase();
+
+  // direct lookup by code or name
+  const byEntry = COUNTRIES.find(c => c.code.toLowerCase() === normalized || c.name.toLowerCase() === normalized);
+  if (byEntry) return byEntry.flag;
+
+  // if input is a 2-letter ISO code (e.g., 'PH' or 'ph'), construct regional indicator flag
+  const alpha = code.trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(alpha)) {
+    const first = 0x1F1E6 + (alpha.charCodeAt(0) - 65);
+    const second = 0x1F1E6 + (alpha.charCodeAt(1) - 65);
+    try {
+      return String.fromCodePoint(first, second);
+    } catch (e) {
+      // fallthrough
+    }
+  }
+
+  return '🌍';
 }
 
 export function getCountryCurrency(code: string): string {
-  return COUNTRIES.find(c => c.code === code)?.currency || 'USD';
+  if (!code) return 'USD';
+  const normalized = code.trim().toLowerCase();
+  const found = COUNTRIES.find(c => c.code.toLowerCase() === normalized || c.name.toLowerCase() === normalized);
+  return found?.currency || 'USD';
 }
 
 export function getPaymentMethods(countryCode: string): string[] {

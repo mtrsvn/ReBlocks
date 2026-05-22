@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -21,6 +21,8 @@ import {
   X,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp, Transaction, useTheme } from "../context";
@@ -60,6 +62,9 @@ export function TransactionHistory() {
   const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
+  // Pagination
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -80,6 +85,16 @@ export function TransactionHistory() {
       tx.recipientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tx.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  useEffect(() => {
+    // Reset to first page when filter changes
+    setPage(1);
+  }, [searchQuery, transactions.length]);
+
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageStart = filtered.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(page * pageSize, filtered.length);
 
   const handleShare = async (tx: Transaction) => {
     try {
@@ -132,7 +147,7 @@ export function TransactionHistory() {
 
         
         <View style={{ gap: 12 }}>
-          {filtered.map((tx) => (
+          {paginated.map((tx) => (
             <AnimatedButton
               key={tx.id}
               onPress={() => setSelectedTransaction(tx)}
@@ -164,6 +179,54 @@ export function TransactionHistory() {
             <View style={styles.emptyContainer}>
               <Send size={40} color="#9aa3b5" style={{ marginBottom: 8 }} />
               <Text style={styles.emptyText}>No transfer records found</Text>
+            </View>
+          )}
+
+          {/* Pagination controls */}
+          {filtered.length > pageSize && (
+            <View style={[styles.paginationCard, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
+              <TouchableOpacity
+                disabled={page <= 1}
+                onPress={() => setPage((p) => Math.max(1, p - 1))}
+                style={[
+                  styles.paginationIconBtn,
+                  {
+                    opacity: page <= 1 ? 0.35 : 1,
+                    backgroundColor: theme.background,
+                    borderColor: theme.border,
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Previous page"
+              >
+                <ChevronLeft size={16} color={theme.text} />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1, alignItems: "center", paddingHorizontal: 8 }}>
+                <Text style={[styles.paginationRange, { color: theme.text }]}>
+                  Showing {pageStart}-{pageEnd} of {filtered.length}
+                </Text>
+                <Text style={[styles.paginationMeta, { color: theme.textSecondary }]}>
+                  Page {page} of {totalPages}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                disabled={page >= totalPages}
+                onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                style={[
+                  styles.paginationIconBtn,
+                  {
+                    opacity: page >= totalPages ? 0.35 : 1,
+                    backgroundColor: theme.background,
+                    borderColor: theme.border,
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Next page"
+              >
+                <ChevronRight size={16} color={theme.text} />
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -294,7 +357,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 110,
+    paddingBottom: 190,
   },
   header: {
     marginBottom: 20,
@@ -539,5 +602,33 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 13,
     fontWeight: "700",
+  },
+  paginationCard: {
+    marginTop: 6,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  paginationIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paginationRange: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  paginationMeta: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: "600",
   },
 });

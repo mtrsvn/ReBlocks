@@ -33,7 +33,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { AnimatedButton } from "./AnimatedButton";
 import { useApp, Recipient, useTheme } from "../context";
 import { getCountryFlag } from "../utils/countries";
-import { MorphCheckoutMock } from "./MorphCheckoutMock";
+import { MorphCheckoutMock } from "./MorphCheckout";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -85,14 +85,14 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const [sendCurrency, setSendCurrency] = useState(preselectedRecipient ? preselectedRecipient.currency : (defaultCurrency === "USD" ? "USD" : "PHP"));
 
   const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
-  const baseFee = defaultCurrency === "USD" ? 0.30 : 15;
+  const baseFee = 0;
 
   const exchangeRate = exchangeRates[sendCurrency] || 1;
+  const defaultCurRate = exchangeRates[defaultCurrency] || (defaultCurrency === "USD" ? 0.018 : 1);
   const receiveAmount = parseFloat(sendAmount) || 0;
 
-  
-  const phpValue = sendCurrency === "PHP" ? receiveAmount : receiveAmount / exchangeRate;
-  const baseEquivalent = defaultCurrency === "USD" ? phpValue * 0.018 : phpValue;
+  const phpValue = sendCurrency === "PHP" ? receiveAmount : (exchangeRate !== 0 ? receiveAmount / exchangeRate : 0);
+  const baseEquivalent = phpValue * defaultCurRate;
   const totalToPay = baseEquivalent + baseFee;
 
   const handleNext = () => setStep((prev) => prev + 1);
@@ -149,7 +149,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
       }
     }
 
-    addTransaction({
+      addTransaction({
       type: "send",
       amount: totalToPay,
       currency: defaultCurrency,
@@ -157,7 +157,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
       recipientCurrency: sendCurrency,
       recipientName: recipient.name,
       fee: baseFee,
-      exchangeRate: sendCurrency === defaultCurrency ? 1 : ((1 / exchangeRate) * (defaultCurrency === "USD" ? 0.018 : 1)),
+      exchangeRate: sendCurrency === defaultCurrency ? 1 : ((defaultCurRate / exchangeRate) || 0),
       fundingSourceId: primarySource.id,
       estimatedArrival: "Instant",
     });
@@ -167,11 +167,13 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `Remittance details: Sent ${sendCurrency} ${receiveAmount.toLocaleString()} to ${
-          selectedRecipient?.name || newName
-        }. Fee: ${curSymbol}${baseFee.toFixed(2)}. Sent via Reblocks.`,
-      });
+      let shareMessage = `Remittance details: Sent ${sendCurrency} ${receiveAmount.toLocaleString()} to ${selectedRecipient?.name || newName}.`;
+      if (baseFee > 0) {
+        shareMessage += ` Fee: ${curSymbol}${baseFee.toFixed(2)}.`;
+      }
+      shareMessage += ` Sent via Reblocks.`;
+
+      await Share.share({ message: shareMessage });
     } catch (error) {
       console.log(error);
     }
@@ -217,7 +219,7 @@ useEffect(() => {
       <MorphCheckoutMock 
         amount={totalToPay}
         onBack={() => setShowMoonPay(false)}
-        onPaymentSuccess={(hash) => {
+        onPaymentSuccess={(hash: string) => {
           setShowMoonPay(false);
           setTxHash(hash);
           setStep(4);
@@ -501,18 +503,20 @@ useEffect(() => {
                   1 {sendCurrency} ={" "}
                   {sendCurrency === defaultCurrency
                     ? "1.00"
-                    : ((1 / exchangeRate) * (defaultCurrency === "USD" ? 0.018 : 1)).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
+                    : ((defaultCurRate / exchangeRate) || 0).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
                   {defaultCurrency}
                 </Text>
               </View>
 
-              <View style={styles.calcRow}>
-                <View style={styles.labelCol}>
-                  <Info size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
-                  <Text style={styles.calcLabel}>Transfer Fee</Text>
+              {baseFee > 0 && (
+                <View style={styles.calcRow}>
+                  <View style={styles.labelCol}>
+                    <Info size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
+                    <Text style={styles.calcLabel}>Transfer Fee</Text>
+                  </View>
+                  <Text style={[styles.calcVal, { color: theme.text }]}>{curSymbol}{baseFee.toFixed(2)}</Text>
                 </View>
-                <Text style={[styles.calcVal, { color: theme.text }]}>{curSymbol}{baseFee.toFixed(2)}</Text>
-              </View>
+              )}
 
               <View style={styles.calcRow}>
                 <View style={styles.labelCol}>
@@ -598,15 +602,17 @@ useEffect(() => {
                     1 {sendCurrency} ={" "}
                     {sendCurrency === defaultCurrency
                       ? "1.00"
-                      : ((1 / exchangeRate) * (defaultCurrency === "USD" ? 0.018 : 1)).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
+                      : ((defaultCurRate / exchangeRate) || 0).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
                     {defaultCurrency}
                   </Text>
                 </View>
 
-                <View style={[styles.calcRow, { borderBottomWidth: 0 }]}>
-                  <Text style={styles.calcLabel}>Fee</Text>
-                  <Text style={[styles.calcValBold, { color: theme.text }]}>{curSymbol}{baseFee.toFixed(2)}</Text>
-                </View>
+                {baseFee > 0 && (
+                  <View style={[styles.calcRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.calcLabel}>Fee</Text>
+                    <Text style={[styles.calcValBold, { color: theme.text }]}>{curSymbol}{baseFee.toFixed(2)}</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -778,7 +784,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 190,
   },
   rowGrid: {
     flexDirection: "row",

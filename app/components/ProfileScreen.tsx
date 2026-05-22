@@ -1181,7 +1181,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
           <View style={{ gap: 14, paddingBottom: 20 }}>
             {[
               { q: "How fast are Reblocks transfers?", a: "Reblocks utilizes high-speed Web3 networks (Morph L2) to execute payments. Almost all international transfers settle in your recipient's bank account or mobile wallet instantly!" },
-              { q: "What are the transfer fees?", a: "We believe in clear and cheap remittance. Sending money to any supported Southeast Asian country costs a flat fee of just $0.30 (or ₱15.00) with zero hidden markup on the exchange rates." },
+              { q: "What are the transfer fees?", a: "We believe in clear and cheap remittance. Sending money to any supported Southeast Asian country has no transfer fee and zero hidden markup on the exchange rates." },
               { q: "Which funding sources are supported?", a: "You can securely connect any standard bank account (like BPI, DBS) or standard Visa/Mastercard debit and credit cards for instant deposits." },
               { q: "Is KYC verification mandatory?", a: "Yes, to ensure complete compliance with local financial regulations and prevent identity theft, we require a simple one-time identity verification." }
             ].map((faq, i) => (
@@ -1323,7 +1323,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 110,
+    paddingBottom: 190,
   },
   header: {
     marginBottom: 20,

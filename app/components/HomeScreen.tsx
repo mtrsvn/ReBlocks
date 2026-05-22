@@ -43,7 +43,7 @@ import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BuyCryptoMock } from "./BuyCryptoMock";
+import { BuyCryptoMock } from "./BuyCrypto";
 
 const COUNTRIES = [
   { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
@@ -167,8 +167,8 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
   const [selectedFundingSourceId, setSelectedFundingSourceId] = useState("");
   const [showCopiedToast, setShowCopiedToast] = useState(false);
 
-  // Calculate transfer stats - show recent transfers
-  const allTransfers = transactions.filter(t => t.type === 'send').slice(0, 5); // Show last 5 transfers
+  // Calculate transfer stats - show recent transfers (previously limited to 5)
+  const allTransfers = transactions.filter(t => t.type === 'send');
   
   // Get user's country currency
   const userCountry = COUNTRIES.find(c => c.name === userProfile?.country);
@@ -340,7 +340,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     return (
       <BuyCryptoMock
         onBack={() => setShowBuyCrypto(false)}
-        onPaymentSuccess={(hash, amount) => {
+        onPaymentSuccess={(hash: string, amount: number) => {
           setWalletBalance(prev => prev + amount);
           setShowBuyCrypto(false);
           setShowCopiedToast(true); // Re-using toast just to show success
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 110,
+    paddingBottom: 190,
   },
   header: {
     flexDirection: "row",

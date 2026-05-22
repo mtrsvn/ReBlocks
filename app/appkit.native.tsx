@@ -1,9 +1,9 @@
-import '@walletconnect/react-native-compat';
+// import '@walletconnect/react-native-compat';
 
 import React from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createAppKit, AppKit, useAccount, useAppKit } from "@reown/appkit-react-native";
-import { EthersAdapter } from "@reown/appkit-ethers-react-native";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { createAppKit, AppKit, useAccount, useAppKit } from "@reown/appkit-react-native";
+// import { EthersAdapter } from "@reown/appkit-ethers-react-native";
 
 export type AppKitConfig = {
   projectId: string;
@@ -20,9 +20,10 @@ export type AppKitConfig = {
   networks: Array<Record<string, unknown>>;
 };
 
-let isInitialized = false;
+// let isInitialized = false;
 
-export function initializeAppKit(config: AppKitConfig) {
+export function initializeAppKit(_config: AppKitConfig) {
+  /*
   if (isInitialized) {
     return;
   }
@@ -36,10 +37,16 @@ export function initializeAppKit(config: AppKitConfig) {
   });
 
   isInitialized = true;
+  */
 }
 
-export const AppKitProvider: React.ComponentType<{ children: React.ReactNode }> = AppKit;
+export const AppKitProvider: React.ComponentType<{ children: React.ReactNode }> = ({ children }) => (
+  <>{children}</>
+);
 
 export function useAppKitHooks() {
-  return { useAppKit, useAccount };
+  return {
+    useAppKit: () => ({ open: () => {} }),
+    useAccount: () => ({ address: undefined, isConnected: false }),
+  };
 }
