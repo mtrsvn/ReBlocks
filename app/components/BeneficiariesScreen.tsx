@@ -81,7 +81,7 @@ export function BeneficiariesScreen({ onSendToRecipient, openAddContactName }: B
   const [showBankPicker, setShowBankPicker] = useState(false);
 
   React.useEffect(() => {
-    if (openAddContactName) {
+    if (openAddContactName !== undefined && openAddContactName !== null) {
       setName(openAddContactName);
       setIsAdding(true);
     }

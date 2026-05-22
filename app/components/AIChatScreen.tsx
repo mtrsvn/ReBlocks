@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Mic,
   ArrowUp,
+  Clock,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedButton } from "./AnimatedButton";
@@ -63,30 +64,45 @@ interface AIConfirmMsg {
   txnId?: string;
 }
 
-interface AIWeb3ConfirmMsg {
+interface AIRecentMsg {
   id: string;
   role: "ai";
-  type: "web3_confirmation";
-  action: string;
-  amount: number;
-  network: string;
-  gasFee: string;
-  status: "pending" | "signing" | "completed" | "cancelled";
-  txHash?: string;
+  type: "recent";
+  text: string;
 }
 
-type ChatMessage = UserMsg | AITextMsg | AIConfirmMsg | AIWeb3ConfirmMsg;
+type ChatMessage = UserMsg | AITextMsg | AIConfirmMsg | AIRecentMsg;
 
 
 
 const CHIPS = [
   "Send money",
+  "Add recipient",
   "Exchange rates",
   "Recent transfers",
-  "Check Gas Fee",
-  "USDC Balance",
-  "Recent TxHash",
 ];
+
+const COUNTRIES = [
+  { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
+  { name: "Singapore", flag: "🇸🇬", currency: "SGD", pair: "USD/SGD", rate: 1.342, symbol: "S$" },
+  { name: "Thailand", flag: "🇹🇭", currency: "THB", pair: "USD/THB", rate: 34.65, symbol: "฿" },
+  { name: "Vietnam", flag: "🇻🇳", currency: "VND", pair: "USD/VND", rate: 25450, symbol: "₫" },
+  { name: "Malaysia", flag: "🇲🇾", currency: "MYR", pair: "USD/MYR", rate: 4.18, symbol: "RM" },
+  { name: "Indonesia", flag: "🇮🇩", currency: "IDR", pair: "USD/IDR", rate: 16120, symbol: "Rp" },
+];
+
+const formatFXRate = (rate: number) => {
+  if (rate >= 1000) {
+    return rate.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+  if (rate >= 100) {
+    return rate.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  }
+  if (rate < 1) {
+    return rate.toFixed(4);
+  }
+  return rate.toFixed(2);
+};
 
 
 
@@ -170,34 +186,30 @@ type Intent =
   | { type: "balance" }
   | { type: "recent" }
   | { type: "send_prompt" }
-  | { type: "rates" }
-  | { type: "gas_fee" }
-  | { type: "usdc_balance" }
-  | { type: "recent_txhash" }
-  | { type: "web3_send"; recipient: string; amount: number }
+  | { type: "add_recipient" }
+  | { type: "rates"; country?: string }
+  | { type: "greeting" }
   | { type: "help" };
 
 function parseIntent(text: string): Intent {
   const lower = text.toLowerCase().trim();
 
-  
-  if (/(?:check|show|get|what'?s?).*gas.*fee/i.test(lower)) return { type: "gas_fee" };
-  if (/usdc.*balance|balance.*usdc/i.test(lower)) return { type: "usdc_balance" };
-  if (/(?:recent|last|show).*(?:txhash|tx hash|transaction hash)/i.test(lower)) return { type: "recent_txhash" };
+  if (/^(hi|hello|hey|greetings|kumusta|good morning|good afternoon|good evening)[.!\s]*$/i.test(lower)) return { type: "greeting" };
 
-  
-  const web3SendRe = /(?:send|transfer)\s+(\d[\d,._]*)\s*usdc\s+(?:to\s+)?(0x[a-fA-F0-9]{40}|.+)/i;
-  const w3m = text.match(web3SendRe);
-  if (w3m) {
-    const amount = parseFloat(w3m[1].replace(/[,_]/g, ""));
-    const recipient = w3m[2].trim();
-    return { type: "web3_send", recipient, amount };
+  const rateKeywords = /rate|exchange|fx|convert/i;
+  if (rateKeywords.test(lower)) {
+    for (const c of COUNTRIES) {
+      if (lower.includes(c.name.toLowerCase()) || lower.includes(c.currency.toLowerCase())) {
+        return { type: "rates", country: c.name };
+      }
+    }
+    return { type: "rates" };
   }
 
   if (/^send\s*money$/i.test(lower) || /^send$/i.test(lower)) return { type: "send_prompt" };
+  if (/^add\s*(?:new\s*)?(?:recipient|contact|person)$/i.test(lower)) return { type: "add_recipient" };
   if (/^check\s*balance$/i.test(lower) || /^balance$/i.test(lower)) return { type: "balance" };
   if (/^recent\s*recipients?$/i.test(lower) || /^recent\s*transfers?$/i.test(lower)) return { type: "recent" };
-  if (/^exchange\s*rates?$/i.test(lower)) return { type: "rates" };
 
   const sendRe = /(?:send|transfer|pay)\s+([₱₮$€]?)(\d[\d,._]*)\s*(?:usdt|usd(?!t)|eur|php)?\s+(?:to\s+)?(.+)/i;
   const m = text.match(sendRe);
@@ -208,7 +220,6 @@ function parseIntent(text: string): Intent {
   }
 
   if (/balance|how much|wallet amount/i.test(lower)) return { type: "balance" };
-  if (/rate|exchange|fx|convert/i.test(lower)) return { type: "rates" };
   if (/recent|last.*(?:send|transfer)|recipient|contact/i.test(lower)) return { type: "recent" };
   if (/send|transfer|pay/i.test(lower)) return { type: "send_prompt" };
 
@@ -373,104 +384,18 @@ function ConfirmationCard({
   );
 }
 
-function Web3ConfirmationCard({
-  message,
-  onConfirm,
-  onCancel,
-}: {
-  message: AIWeb3ConfirmMsg;
-  onConfirm: (id: string) => void;
-  onCancel: (id: string) => void;
-}) {
-  const { action, network, gasFee, status, txHash } = message;
-  const theme = useTheme();
-  return (
-    <View style={styles.botContainer}>
-      <View style={styles.botAvatar}>
-        <Bot size={13} color="white" />
-      </View>
-      <View style={[styles.confirmCard, { backgroundColor: theme.surface }]}>
-        <View style={[styles.cardHeader, { borderBottomColor: theme.border }]}>
-          <Text style={styles.cardHeaderTitle}>SMART CONTRACT ACTION</Text>
-        </View>
-
-        <View style={styles.cardContent}>
-          <View style={{ gap: 8, marginBottom: 16 }}>
-            <View style={styles.breakdownRow}>
-              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Action</Text>
-              <Text style={[styles.web3Val, { color: theme.text }]}>{action}</Text>
-            </View>
-            <View style={styles.breakdownRow}>
-              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Network</Text>
-              <Text style={[styles.web3Val, { color: "#10B981" }]}>{network}</Text>
-            </View>
-            <View style={styles.breakdownRow}>
-              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Gas Fee</Text>
-              <Text style={[styles.web3Val, { color: "#48bb78" }]}>{gasFee}</Text>
-            </View>
-          </View>
-
-          {status === "pending" && (
-            <View style={styles.actionRow}>
-              <AnimatedButton
-                onPress={() => onCancel(message.id)}
-                style={[styles.cancelBtn, { backgroundColor: theme.background }]}
-              >
-                <Text style={[styles.cancelText, { color: theme.textSecondary }]}>Reject</Text>
-              </AnimatedButton>
-              <AnimatedButton
-                onPress={() => onConfirm(message.id)}
-                style={styles.confirmBtnWrapper}
-              >
-                <LinearGradient
-                  colors={["#10B981", "#059669"]}
-                  style={styles.confirmBtn}
-                >
-                  <Text style={styles.confirmText}>Sign Transaction</Text>
-                </LinearGradient>
-              </AnimatedButton>
-            </View>
-          )}
-
-          {status === "signing" && (
-            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
-              <ActivityIndicator size="small" color="#48bb78" />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Broadcasting to Morph L2...</Text>
-            </View>
-          )}
-
-          {status === "completed" && (
-            <View style={[styles.successWrapper, { backgroundColor: theme.background }]}>
-              <CheckCircle size={24} color="#48bb78" />
-              <Text style={[styles.successText, { color: theme.text }]}>Transaction Confirmed!</Text>
-              <Text style={[styles.txnIdText, { color: theme.textSecondary }]}>TxHash: {txHash}</Text>
-            </View>
-          )}
-
-          {status === "cancelled" && (
-            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
-              <X size={14} color="#ef4444" />
-              <Text style={{ fontSize: 12, color: theme.textSecondary, fontWeight: "600" }}>
-                Transaction Rejected
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function MessageBubble({
   message,
   onConfirm,
   onCancel,
   onSendAgain,
+  onHistory,
 }: {
   message: ChatMessage;
   onConfirm: (id: string) => void;
   onCancel: (id: string) => void;
   onSendAgain: (txn: TxnData) => void;
+  onHistory?: () => void;
 }) {
   const theme = useTheme();
 
@@ -495,13 +420,45 @@ function MessageBubble({
     );
   }
 
-  if (message.type === "web3_confirmation") {
+  if (message.type === "recent") {
     return (
-      <Web3ConfirmationCard
-        message={message}
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />
+      <View style={styles.botContainer}>
+        <View style={styles.botAvatar}>
+          <Bot size={13} color="white" />
+        </View>
+        <View style={[styles.botBubble, { backgroundColor: theme.surface }]}>
+          <FormattedText text={message.text} />
+          {onHistory && (
+            <AnimatedButton
+              onPress={onHistory}
+              style={{
+                marginTop: 12,
+                height: 44,
+                borderRadius: 14,
+                overflow: "hidden",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 3,
+              }}
+            >
+              <LinearGradient
+                colors={["#10B981", "#059669"]}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Clock size={15} color="#ffffff" style={{ marginRight: 8 }} />
+                <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>Check your history</Text>
+              </LinearGradient>
+            </AnimatedButton>
+          )}
+        </View>
+      </View>
     );
   }
 
@@ -523,16 +480,19 @@ interface AIChatScreenProps {
   onBack: () => void;
   onStartSend?: (recipient: Recipient, amount?: number, currency?: string) => void;
   onStartAddContact?: (name: string) => void;
+  onHistory?: () => void;
 }
 
-export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatScreenProps) {
-  const { recipients } = useApp();
+export function AIChatScreen({ onBack, onStartSend, onStartAddContact, onHistory }: AIChatScreenProps) {
+  const { recipients, transactions, exchangeRates, defaultCurrency, userProfile } = useApp();
+  const firstName = userProfile?.fullName?.split(" ")[0] || "there";
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: uid(),
       role: "ai",
       type: "text",
-      text: "Hi, Carlos! 👋 I'm your **AI Wallet Assistant**.\n\nJust tell me what you need — try something like:\n\"Send ₱1000 to Maria\" or \"Show exchange rates\"",
+      text: `Hi, ${firstName}! 👋 I'm your **Smart Assistant**.\n\nJust tell me what you need — try something like:\n"Send ₱1000 to Maria" or "Show exchange rates"`,
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -561,7 +521,19 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
     await new Promise((r) => setTimeout(r, 1200));
     setIsTyping(false);
 
-    if (intent.type === "send") {
+    if (intent.type === "greeting") {
+      const greetingVariants = [
+        `Hello, ${firstName}! 👋 I'm your Smart Assistant. How can I help you with your finances today?`,
+        `Hi ${firstName}! ✨ Ready to send some money or check the latest rates?`,
+        `Hey ${firstName}! 😊 What can I do for you today? I can help with transfers, balances, and more!`,
+        `Hello ${firstName}! 🌟 Need help with your wallet? Just let me know!`
+      ];
+      addAIMsg({
+        role: "ai",
+        type: "text",
+        text: greetingVariants[Math.floor(Math.random() * greetingVariants.length)],
+      });
+    } else if (intent.type === "send") {
       const contact = findRecipientFromDatabase(intent.recipient, recipients);
       if (!contact) {
         addAIMsg({
@@ -602,55 +574,83 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
       addAIMsg({
         role: "ai",
         type: "text",
-        text: "💰 **Your current balances:**\n\n• ₱ 128,663.55 PHP\n• ₮ 2,241.50 USDT\n• $ 2,241.50 USD\n\nYour wallet is looking great! 🟢",
+        text: "Checking your accounts... 🏦\n\n💰 **Your current balances:**\n\n• ₱ 128,663.55 PHP\n• ₮ 2,241.50 USDT\n• $ 2,241.50 USD\n\nYour wallet is looking great! 🟢",
       });
     } else if (intent.type === "recent") {
+      const recentTx = transactions.filter((t) => t.type === 'send').slice(0, 3);
+      let text = "Pulling up your history... 📋\n\n";
+      if (recentTx.length === 0) {
+        text += "You don't have any recent transfers yet.";
+      } else {
+        text = "Here are your **recent transfers:**\n\n";
+        recentTx.forEach((tx) => {
+          text += `• ${tx.recipientName} — ${defaultCurrency === "USD" ? "$" : "₱"}${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} · ${new Date(tx.date).toLocaleDateString()}\n`;
+        });
+      }
       addAIMsg({
         role: "ai",
-        type: "text",
-        text: "Here are your **recent recipients:**\n\n🇯🇵 Maria Santos @mariasantos — ₮15.00 · Today\n🇺🇸 Juan dela Cruz @juandc — ₮50.00 · Today\n🇬🇧 Ana Reyes @anareyes — ₮100.00 · Yesterday\n\nWant to send to any of them?",
+        type: "recent",
+        text,
       });
     } else if (intent.type === "rates") {
+      if (intent.country) {
+        const c = COUNTRIES.find((c) => c.name === intent.country);
+        if (c) {
+          const usdRate = exchangeRates["USD"] || 0.018;
+          const curRate = exchangeRates[c.currency] || 1;
+          const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
+          const text = `Fetching the latest rates... 💱\n\n**Live Exchange Rate for ${c.name} (1 USD):**\n\n${c.flag} ${c.currency} → ${c.symbol}${formatFXRate(realRate)}\n\nGreat rate today! 📈`;
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text,
+          });
+          return;
+        }
+      }
+
+      const allRates = COUNTRIES.map((c) => {
+        const usdRate = exchangeRates["USD"] || 0.018;
+        const curRate = exchangeRates[c.currency] || 1;
+        const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
+        return { ...c, rate: realRate };
+      });
+      let text = "Fetching the latest rates... 💱\n\n**Live Exchange Rates (1 USD):**\n\n";
+      allRates.forEach((r) => {
+        text += `${r.flag} ${r.currency} → ${r.symbol}${formatFXRate(r.rate)}\n`;
+      });
+      text += "\nGreat rates today! 📈";
       addAIMsg({
         role: "ai",
         type: "text",
-        text: "💱 **Live Exchange Rates (to PHP):**\n\n🇺🇸 USD → ₱56.20\n🇪🇺 EUR → ₱60.45\n🇬🇧 GBP → ₱71.12\n🇯🇵 JPY → ₱0.38\n🇸🇬 SGD → ₱42.50\n🇦🇺 AUD → ₱37.82\n\nGreat rates today! 📈",
+        text,
       });
+    } else if (intent.type === "add_recipient") {
+      addAIMsg({
+        role: "ai",
+        type: "text",
+        text: "Opening the Add Recipient page for you now... 📝",
+      });
+      if (onStartAddContact) {
+        onStartAddContact("");
+      }
     } else if (intent.type === "send_prompt") {
       addAIMsg({
         role: "ai",
         type: "text",
         text: "Sure! Tell me who to send to and how much.\n\nExamples:\n• \"Send ₱1000 to Maria\"\n• \"Send 50 USDT to Juan\"\n• \"Transfer ₱500 to @anareyes\"",
       });
-    } else if (intent.type === "gas_fee") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: "⛽ **Current Gas Fees on Morph L2:**\n\n• Standard: **$0.001** (~1-2 min)\n• Fast: **$0.002** (~30 sec)\n• Instant: **$0.003** (~10 sec)\n\nMorph L2 is optimized for low-cost transactions! 🚀",
-      });
-    } else if (intent.type === "usdc_balance") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: "💵 **Your USDC Balance:**\n\n• **2,241.50 USDC** (Morph L2)\n• **~₱126,173** at current rates\n\nYour stablecoin wallet is ready to use! ✨",
-      });
-    } else if (intent.type === "recent_txhash") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: "📋 **Recent Transaction Hashes:**\n\n• **0x71C7...3aF** — Send 50 USDC (Success)\n• **0xA4B2...8D1** — Receive 100 USDC (Success)\n• **0x9F3E...C2A** — Send 25 USDC (Success)\n\nAll transactions confirmed on Morph L2! ✅",
-      });
-    } else if (intent.type === "web3_send") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: `🔗 **Blockchain Transfer Initiated**\n\nAction: Send **${intent.amount} USDC**\nTo: \`${intent.recipient.slice(0, 6)}...${intent.recipient.slice(-4)}\`\nNetwork: **Morph L2**\nEstimated Gas: **$0.001**\n\nPlease confirm this transaction in your wallet.`,
-      });
     } else {
+      const helpVariants = [
+        "I'm not quite sure what you mean. 🤔\n\nBut I'd love to help you with:\n💸 **Sending money** (e.g. \"Send ₱500 to Juan\")\n💱 **Checking exchange rates** (e.g. \"USD to PHP rate\")\n🕒 **Viewing recent transfers** (e.g. \"Show recent transfers\")\n👤 **Adding a recipient** (e.g. \"Add new contact\")\n\nHow can I assist you today? ✨",
+        "Oops, I didn't catch that! 😅\n\nHere are some things I can do for you:\n• **Send funds instantly** 🚀\n• **Check live exchange rates** 📈\n• **Show your transfer history** 📋\n• **Add a new recipient** 👤\n\nJust let me know what you need!",
+        "I'm still learning, so I might have missed that! 🤖\n\nYou can try asking me to:\n👉 **\"Send ₱1,000 to Maria\"**\n👉 **\"What's the exchange rate for Singapore?\"**\n👉 **\"Show my recent transfers\"**\n👉 **\"Add a new recipient\"**\n\nWhat would you like to do? 🌟"
+      ];
+      const randomHelp = helpVariants[Math.floor(Math.random() * helpVariants.length)];
       addAIMsg({
         role: "ai",
         type: "text",
-        text: "I can help you with:\n\n• **Send money** — \"Send ₱500 to Juan\"\n• **Exchange rates** — \"Show USD to PHP rate\"\n• **Recent transfers** — \"Show recent recipients\"\n• **Gas fees** — \"Check gas fee\"\n• **USDC balance** — \"Show USDC balance\"\n\nWhat would you like to do?",
+        text: randomHelp,
       });
     }
   };
@@ -708,19 +708,7 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
     setInputText(text);
   };
 
-  const handleVoicePress = () => {
-    setInputText("");
-    const phrase = "Send ₱500 to Juan dela Cruz";
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < phrase.length) {
-        setInputText((prev) => prev + phrase.charAt(index));
-        index++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 40);
-  };
+
 
   const canSend = inputText.trim().length > 0 && !isTyping;
 
@@ -744,7 +732,7 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
             <View style={styles.botAvatar}>
               <Bot size={17} color="white" />
             </View>
-            <Text style={[styles.headerTitleText, { color: theme.text }]}>AI Wallet Assistant</Text>
+            <Text style={[styles.headerTitleText, { color: theme.text }]}>Smart Assistant</Text>
           </View>
         </View>
 
@@ -763,6 +751,7 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
               onConfirm={handleConfirm}
               onCancel={handleCancel}
               onSendAgain={handleSendAgain}
+              onHistory={onHistory}
             />
           ))}
 
@@ -814,7 +803,7 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
               />
             </View>
             <AnimatedButton
-              onPress={inputText.trim().length > 0 ? () => handleSend() : handleVoicePress}
+              onPress={inputText.trim().length > 0 ? () => handleSend() : undefined}
               style={styles.sendBtnWrapper}
             >
               {inputText.trim().length > 0 ? (
@@ -826,7 +815,7 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatS
                 </LinearGradient>
               ) : (
                 <View style={[styles.sendBtn, { backgroundColor: theme.surface }]}>
-                  <Mic size={18} color={theme.icon} />
+                  <ArrowUp size={18} color={theme.icon} />
                 </View>
               )}
             </AnimatedButton>

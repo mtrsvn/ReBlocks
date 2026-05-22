@@ -82,7 +82,7 @@ function AppContent() {
     setPreselectedRecipient(recipient);
     setPrefilledSendAmount(sendDraft?.amount);
     setPrefilledSendCurrency(sendDraft?.currency);
-    setOpenAddContactName(addContactName || null);
+    setOpenAddContactName(addContactName !== undefined ? addContactName : null);
     
     const prevIndex = screenOrder.indexOf(prevScreen);
     const newIndex = screenOrder.indexOf(screen);
@@ -217,6 +217,7 @@ function AppContent() {
                 navigate("send", recipient, { amount, currency })
               }
               onStartAddContact={(name) => navigate("beneficiaries", null, undefined, name)}
+              onHistory={() => navigate("history")}
             />
           )}
         </Animated.View>
