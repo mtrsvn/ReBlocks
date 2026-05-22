@@ -36,9 +36,10 @@ import {
 
 interface BeneficiariesScreenProps {
   onSendToRecipient: (recipient?: Recipient) => void;
+  openAddContactName?: string | null;
 }
 
-export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenProps) {
+export function BeneficiariesScreen({ onSendToRecipient, openAddContactName }: BeneficiariesScreenProps) {
   const {
     recipients,
     addRecipient,
@@ -78,6 +79,13 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
   
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showBankPicker, setShowBankPicker] = useState(false);
+
+  React.useEffect(() => {
+    if (openAddContactName) {
+      setName(openAddContactName);
+      setIsAdding(true);
+    }
+  }, [openAddContactName]);
 
   const filtered = recipients.filter(
     (r) =>

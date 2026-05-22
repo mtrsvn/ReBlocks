@@ -24,7 +24,8 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedButton } from "./AnimatedButton";
-import { useTheme } from "../context";
+import { Recipient, useApp, useTheme } from "../context";
+import { getCountryFlag } from "../utils/countries";
 
 
 
@@ -78,18 +79,6 @@ type ChatMessage = UserMsg | AITextMsg | AIConfirmMsg | AIWeb3ConfirmMsg;
 
 
 
-const CONTACTS: Record<string, Pick<TxnData, "recipient" | "username" | "flag" | "country">> = {
-  maria: { recipient: "Maria Mendoza", username: "@mariamendoza", flag: "🇵🇭", country: "PH" },
-  mariamendoza: { recipient: "Maria Mendoza", username: "@mariamendoza", flag: "🇵🇭", country: "PH" },
-  mariasantos: { recipient: "Maria Santos", username: "@mariasantos", flag: "🇯🇵", country: "JP" },
-  juan: { recipient: "Juan dela Cruz", username: "@juandc", flag: "🇺🇸", country: "US" },
-  juandc: { recipient: "Juan dela Cruz", username: "@juandc", flag: "🇺🇸", country: "US" },
-  ana: { recipient: "Ana Reyes", username: "@anareyes", flag: "🇬🇧", country: "GB" },
-  anareyes: { recipient: "Ana Reyes", username: "@anareyes", flag: "🇬🇧", country: "GB" },
-  pedro: { recipient: "Pedro Lim", username: "@pedrolim", flag: "🇸🇬", country: "SG" },
-  pedrolim: { recipient: "Pedro Lim", username: "@pedrolim", flag: "🇸🇬", country: "SG" },
-};
-
 const CHIPS = [
   "Send money",
   "Exchange rates",
@@ -124,6 +113,63 @@ function lookupContact(name: string) {
 function calcFee(amount: number, currency: string) {
   if (currency === "PHP") return parseFloat(Math.max(5, amount * 0.005).toFixed(2));
   return parseFloat(Math.max(0.1, amount * 0.005).toFixed(4));
+}
+
+function normalizeQuery(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9@\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function makeUsername(name: string) {
+  const cleaned = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return `@${cleaned.slice(0, 18) || "recipient"}`;
+}
+
+function recipientToTxn(recipient: Recipient, amount: number, currency: string, symbol: string, fee: number): TxnData {
+  return {
+    recipient: recipient.name,
+    username: makeUsername(recipient.name),
+    amount,
+    currency,
+    symbol,
+    fee,
+    total: parseFloat((amount + fee).toFixed(2)),
+    flag: getCountryFlag(recipient.countryCode),
+    country: recipient.countryCode.toUpperCase(),
+  };
+}
+
+function findRecipientFromDatabase(query: string, recipients: Recipient[]) {
+  const cleaned = normalizeQuery(query);
+  if (!cleaned) return null;
+
+  const exact = recipients.find((recipient) => {
+    const name = normalizeQuery(recipient.name);
+    const bank = normalizeQuery(recipient.bankName);
+    const account = normalizeQuery(recipient.accountNumber || "");
+    const country = normalizeQuery(recipient.countryCode);
+    return cleaned === name || cleaned === bank || cleaned === account || cleaned === country;
+  });
+  if (exact) return exact;
+
+  return recipients.find((recipient) => {
+    const name = normalizeQuery(recipient.name);
+    const bank = normalizeQuery(recipient.bankName);
+    const account = normalizeQuery(recipient.accountNumber || "");
+    const country = normalizeQuery(recipient.countryCode);
+    return (
+      name.includes(cleaned) ||
+      cleaned.includes(name) ||
+      bank.includes(cleaned) ||
+      cleaned.includes(bank) ||
+      account.includes(cleaned) ||
+      cleaned.includes(account) ||
+      country.includes(cleaned)
+    );
+  }) || null;
 }
 
 type Intent =
@@ -482,9 +528,12 @@ function MessageBubble({
 
 interface AIChatScreenProps {
   onBack: () => void;
+  onStartSend?: (recipient: Recipient, amount?: number, currency?: string) => void;
+  onStartAddContact?: (name: string) => void;
 }
 
-export function AIChatScreen({ onBack }: AIChatScreenProps) {
+export function AIChatScreen({ onBack, onStartSend, onStartAddContact }: AIChatScreenProps) {
+  const { recipients } = useApp();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: uid(),
@@ -520,35 +569,40 @@ export function AIChatScreen({ onBack }: AIChatScreenProps) {
     setIsTyping(false);
 
     if (intent.type === "send") {
-      const contact = lookupContact(intent.recipient);
+      const contact = findRecipientFromDatabase(intent.recipient, recipients);
       if (!contact) {
         addAIMsg({
           role: "ai",
           type: "text",
-          text: `I couldn't find **"${intent.recipient}"** in your contacts.\n\nTry searching by @username or check your beneficiaries list.`,
+          text: `I couldn't find **"${intent.recipient}"** in your saved recipients.\n\nOpening add contact so you can save it now.`,
         });
+        if (onStartAddContact) {
+          onStartAddContact(intent.recipient);
+        }
         return;
       }
       if (!intent.amount || intent.amount <= 0) {
         addAIMsg({
           role: "ai",
           type: "text",
-          text: `Got it — sending to **${contact.recipient}**. How much would you like to send? E.g. \"Send ₱500 to ${intent.recipient}\"`,
+          text: `Got it — I found **${contact.name}** in your saved recipients. How much would you like to send? E.g. \"Send ₱500 to ${contact.name}\"`,
         });
+        return;
+      }
+      if (onStartSend) {
+        addAIMsg({
+          role: "ai",
+          type: "text",
+          text: `Opening send flow for **${contact.name}** with **${intent.symbol}${intent.amount.toLocaleString()}**.`,
+        });
+        onStartSend(contact, intent.amount, intent.currency);
         return;
       }
       const fee = calcFee(intent.amount, intent.currency);
       addAIMsg({
         role: "ai",
         type: "confirmation",
-        txn: {
-          ...contact,
-          amount: intent.amount,
-          currency: intent.currency,
-          symbol: intent.symbol,
-          fee,
-          total: parseFloat((intent.amount + fee).toFixed(2)),
-        },
+        txn: recipientToTxn(contact, intent.amount, intent.currency, intent.symbol, fee),
         status: "pending",
       });
     } else if (intent.type === "balance") {

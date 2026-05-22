@@ -44,6 +44,9 @@ function AppContent() {
   const { userProfile, isAuthLoading, darkMode } = useApp();
   const [activeScreen, setActiveScreen] = useState<Screen>("home");
   const [preselectedRecipient, setPreselectedRecipient] = useState<Recipient | null>(null);
+  const [prefilledSendAmount, setPrefilledSendAmount] = useState<number | undefined>(undefined);
+  const [prefilledSendCurrency, setPrefilledSendCurrency] = useState<string | undefined>(undefined);
+  const [openAddContactName, setOpenAddContactName] = useState<string | null>(null);
   const [pinUnlocked, setPinUnlocked] = useState(false);
   const [twoFactorUnlocked, setTwoFactorUnlocked] = useState(false);
   const [showPinRemovalEntry, setShowPinRemovalEntry] = useState(false);
@@ -70,8 +73,16 @@ function AppContent() {
     }
   }, [userProfile]);
 
-  const navigate = (screen: Screen, recipient: Recipient | null = null) => {
+  const navigate = (
+    screen: Screen,
+    recipient: Recipient | null = null,
+    sendDraft?: { amount?: number; currency?: string },
+    addContactName?: string | null
+  ) => {
     setPreselectedRecipient(recipient);
+    setPrefilledSendAmount(sendDraft?.amount);
+    setPrefilledSendCurrency(sendDraft?.currency);
+    setOpenAddContactName(addContactName || null);
     
     const prevIndex = screenOrder.indexOf(prevScreen);
     const newIndex = screenOrder.indexOf(screen);
@@ -187,17 +198,26 @@ function AppContent() {
             <SendMoneyFlow
               onBack={() => navigate("home")}
               preselectedRecipient={preselectedRecipient}
+              prefilledAmount={prefilledSendAmount}
+              prefilledCurrency={prefilledSendCurrency}
             />
           )}
           {activeScreen === "beneficiaries" && (
             <BeneficiariesScreen
               onSendToRecipient={(recipient) => navigate("send", recipient || null)}
+              openAddContactName={openAddContactName}
             />
           )}
           {activeScreen === "history" && <TransactionHistory />}
           {activeScreen === "profile" && <ProfileScreen onLogout={handleLogout} onPinRemovalShow={setShowPinRemovalEntry} />}
           {activeScreen === "ai-chat" && (
-            <AIChatScreen onBack={() => navigate("home")} />
+            <AIChatScreen
+              onBack={() => navigate("home")}
+              onStartSend={(recipient, amount, currency) =>
+                navigate("send", recipient, { amount, currency })
+              }
+              onStartAddContact={(name) => navigate("beneficiaries", null, undefined, name)}
+            />
           )}
         </Animated.View>
 

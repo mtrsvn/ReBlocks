@@ -50,9 +50,11 @@ const COUNTRIES = [
 interface SendMoneyFlowProps {
   onBack: () => void;
   preselectedRecipient?: Recipient | null;
+  prefilledAmount?: number;
+  prefilledCurrency?: string;
 }
 
-export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowProps) {
+export function SendMoneyFlow({ onBack, preselectedRecipient, prefilledAmount, prefilledCurrency }: SendMoneyFlowProps) {
   const {
     recipients,
     fundingSources,
@@ -81,8 +83,22 @@ export function SendMoneyFlow({ onBack, preselectedRecipient }: SendMoneyFlowPro
   const [newAccountNumber, setNewAccountNumber] = useState("");
 
   
-  const [sendAmount, setSendAmount] = useState("");
-  const [sendCurrency, setSendCurrency] = useState(preselectedRecipient ? preselectedRecipient.currency : (defaultCurrency === "USD" ? "USD" : "PHP"));
+  const [sendAmount, setSendAmount] = useState(prefilledAmount !== undefined ? String(prefilledAmount) : "");
+  const [sendCurrency, setSendCurrency] = useState(
+    prefilledCurrency || (preselectedRecipient ? preselectedRecipient.currency : (defaultCurrency === "USD" ? "USD" : "PHP"))
+  );
+
+  useEffect(() => {
+    if (prefilledAmount !== undefined) {
+      setSendAmount(String(prefilledAmount));
+    }
+  }, [prefilledAmount]);
+
+  useEffect(() => {
+    if (prefilledCurrency) {
+      setSendCurrency(prefilledCurrency);
+    }
+  }, [prefilledCurrency]);
 
   const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
   const baseFee = 0;
