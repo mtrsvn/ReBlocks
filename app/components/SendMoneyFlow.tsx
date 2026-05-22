@@ -341,7 +341,7 @@ useEffect(() => {
                         setSendCurrency(r.currency);
                         handleNext();
                       }}
-                      style={[styles.flatCardRow, { backgroundColor: theme.surface }]}
+                      style={[styles.flatCardRow, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
                     >
                       <View style={styles.avatarCircle}>
                         <Text style={styles.avatarText}>{r.name.charAt(0)}</Text>
@@ -475,7 +475,7 @@ useEffect(() => {
         {step === 2 && (
           <View style={{ gap: 20 }}>
             
-            <View style={[styles.flatCardRow, { backgroundColor: theme.surface }]}>
+            <View style={[styles.flatCardRow, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarText}>
                   {(selectedRecipient?.name || newName).charAt(0)}
@@ -492,7 +492,7 @@ useEffect(() => {
             </View>
 
             
-            <View style={[styles.flatCard, { backgroundColor: theme.surface }]}>
+            <View style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
               <Text style={styles.inputCardLabel}>Amount to Send ({sendCurrency})</Text>
               <View style={styles.amountInputContainer}>
                 <Text style={styles.currencySymbol}>{sendCurrency}</Text>
@@ -509,7 +509,7 @@ useEffect(() => {
             </View>
 
             
-            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
+            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
               <View style={styles.calcRow}>
                 <View style={styles.labelCol}>
                   <Banknote size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
@@ -579,7 +579,7 @@ useEffect(() => {
             </Text>
 
             {/* Review Card */}
-            <View style={[styles.flatCard, { backgroundColor: theme.surface }]}>
+            <View style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
               <View style={styles.reviewFlowRow}>
                 <View style={styles.reviewCol}>
                   <Text style={styles.reviewCap}>PAYING</Text>
@@ -660,7 +660,7 @@ useEffect(() => {
             </Text>
 
             
-            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface }]}>
+            <View style={[styles.calcInsetCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
               <View style={styles.calcRow}>
                 <Text style={styles.calcLabel}>Transaction ID</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

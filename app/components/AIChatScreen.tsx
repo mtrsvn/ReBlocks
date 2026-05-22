@@ -101,14 +101,7 @@ function detectCurrency(text: string): { symbol: string; currency: string } {
   return { symbol: "₱", currency: "PHP" };
 }
 
-function lookupContact(name: string) {
-  const cleaned = name.replace(/^@/, "").toLowerCase().trim();
-  if (CONTACTS[cleaned]) return CONTACTS[cleaned];
-  for (const k of Object.keys(CONTACTS)) {
-    if (cleaned.includes(k) || k.includes(cleaned)) return CONTACTS[k];
-  }
-  return null;
-}
+
 
 function calcFee(amount: number, currency: string) {
   if (currency === "PHP") return parseFloat(Math.max(5, amount * 0.005).toFixed(2));
