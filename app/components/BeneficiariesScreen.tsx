@@ -166,7 +166,7 @@ export function BeneficiariesScreen({ onSendToRecipient }: BeneficiariesScreenPr
         
         <View style={{ gap: 12 }}>
           {filtered.map((r) => (
-            <View key={r.id} style={[styles.recipientCard, { backgroundColor: theme.surface }]}>
+            <View key={r.id} style={[styles.recipientCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <AnimatedButton
                 onPress={() => setSelectedRecipient(r)}
                 style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
@@ -509,7 +509,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,

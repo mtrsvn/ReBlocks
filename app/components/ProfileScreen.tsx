@@ -491,7 +491,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         {settingSections.map((section) => (
           <View key={section.title} style={{ marginBottom: 20 }}>
             <Text style={styles.sectionTitle}>{section.title.toUpperCase()}</Text>
-            <View style={[styles.flatCardGroup, { backgroundColor: theme.surface }]}>
+            <View style={[styles.flatCardGroup, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               {section.items.map((item, i) => {
                 const Icon = item.icon;
                 const isLast = i === section.items.length - 1;
@@ -538,7 +538,7 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
 
         
         <AnimatedButton
-          style={[styles.signOutBtn, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
+          style={[styles.signOutBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
           onPress={() => {
             Alert.alert("Sign Out", "Are you sure you want to sign out?", [
               { text: "Cancel", style: "cancel" },
@@ -1343,6 +1343,7 @@ const styles = StyleSheet.create({
   flatCard: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
+    borderWidth: 1,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
@@ -1575,12 +1576,13 @@ const styles = StyleSheet.create({
   flatCardGroup: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
+    borderWidth: 1,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 4,
-    paddingVertical: 6,
+    elevation: 2,
+    paddingVertical: 8,
   },
   settingItemRow: {
     flexDirection: "row",
@@ -1627,8 +1629,9 @@ const styles = StyleSheet.create({
   signOutBtn: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
-    height: 48,
-    borderRadius: 16,
+    height: 52,
+    borderRadius: 20,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,

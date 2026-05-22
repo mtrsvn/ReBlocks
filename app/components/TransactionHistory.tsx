@@ -151,7 +151,7 @@ export function TransactionHistory() {
             <AnimatedButton
               key={tx.id}
               onPress={() => setSelectedTransaction(tx)}
-              style={[styles.txRow, { backgroundColor: theme.surface }]}
+              style={[styles.txRow, { backgroundColor: theme.surface, borderColor: theme.border }]}
             >
               <View style={styles.txIconWrapper}>
                 <Send size={18} color="#ffffff" />
@@ -399,7 +399,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
     marginBottom: 10,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
@@ -608,7 +609,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
