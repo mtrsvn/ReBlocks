@@ -212,238 +212,229 @@ export function BeneficiariesScreen({ onSendToRecipient, openAddContactName }: B
         </View>
       </ScrollView>
 
-      
-      <BottomSheet
-        isOpen={isAdding}
-        onClose={() => setIsAdding(false)}
-        title="New Recipient"
-      >
-        <View style={{ gap: 16 }}>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>ACCOUNT NAME</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Maria Mendoza"
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
-            />
-          </View>
-
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>COUNTRY</Text>
-            <AnimatedButton
-              onPress={() => setShowCountryPicker(true)}
-              style={[styles.selectBox, { backgroundColor: theme.background, borderColor: theme.border }]}
-            >
-              <Text style={[styles.selectBoxText, { color: theme.text }]}>
-                {getCountryFlag(countryCode)} {getCountryName(countryCode)}
-              </Text>
-              <ChevronDown size={16} color="#9aa3b5" />
-            </AnimatedButton>
-          </View>
-
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>PAYMENT METHOD</Text>
-            <AnimatedButton
-              onPress={() => setShowBankPicker(true)}
-              style={[styles.selectBox, { backgroundColor: theme.background, borderColor: theme.border }]}
-            >
-              <Text style={[styles.selectBoxText, { color: theme.text }, !bank && { color: "#9aa3b5" }]}>
-                {bank || "Select Bank or Wallet"}
-              </Text>
-              <ChevronDown size={16} color="#9aa3b5" />
-            </AnimatedButton>
-          </View>
-
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>ACCOUNT NUMBER</Text>
-            <TextInput
-              value={account}
-              onChangeText={setAccount}
-              keyboardType="numeric"
-              placeholder="e.g. 0917 123 4567"
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
-            />
-          </View>
-
-          
-          <AnimatedButton
-            disabled={!name || !bank || !account}
-            onPress={handleSave}
-            style={[
-              styles.saveBtnWrapper,
-              (!name || !bank || !account) && styles.saveBtnDisabled,
-            ]}
-          >
-            <LinearGradient
-              colors={["#10B981", "#059669"]}
-              style={styles.saveBtn}
-            >
-              <Text style={styles.saveBtnText}>Save Recipient</Text>
-            </LinearGradient>
-          </AnimatedButton>
-        </View>
-      </BottomSheet>
-
-      
-      <BottomSheet
-        isOpen={!!selectedRecipient}
-        onClose={() => setSelectedRecipient(null)}
-        title="Recipient Details"
-      >
-        {selectedRecipient && (
+      {isAdding && (
+        <BottomSheet
+          isOpen={true}
+          onClose={() => setIsAdding(false)}
+          title="New Recipient"
+        >
           <View style={{ gap: 16 }}>
-            
-            <View style={[styles.detailCard, { backgroundColor: theme.background }]}>
-              <View style={styles.detailAvatarWrapper}>
-                <Text style={styles.detailAvatarInitials}>
-                  {selectedRecipient.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </Text>
-              </View>
-              <Text style={[styles.detailName, { color: theme.text }]}>{selectedRecipient.name}</Text>
-              <Text style={styles.detailUsername}>
-                @{selectedRecipient.name.toLowerCase().replace(/\s+/g, "")}
-              </Text>
-              <View style={styles.detailCountryBadge}>
-                <Text style={styles.detailCountryText}>
-                  {getCountryFlag(selectedRecipient.countryCode)}{" "}
-                  {getCountryName(selectedRecipient.countryCode).toUpperCase()}
-                </Text>
-              </View>
+            {/* Account Name */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ACCOUNT NAME</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Maria Mendoza"
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+              />
             </View>
 
-            
-            <View style={[styles.detailInfoBox, { backgroundColor: theme.background }]}>
-              <View style={[styles.detailRow, { borderColor: theme.border }]}>
-                <Text style={styles.detailLabel}>PAYMENT METHOD</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Building2 size={14} color="#10B981" />
-                  <Text style={[styles.detailValBold, { color: theme.text }]}>{selectedRecipient.bankName}</Text>
+            {/* Country Picker */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>COUNTRY</Text>
+              <AnimatedButton
+                onPress={() => setShowCountryPicker(true)}
+                style={[styles.selectBox, { backgroundColor: theme.background, borderColor: theme.border }]}
+              >
+                <Text style={[styles.selectBoxText, { color: theme.text }]}>
+                  {getCountryFlag(countryCode)} {getCountryName(countryCode)}
+                </Text>
+                <ChevronDown size={16} color="#9aa3b5" />
+              </AnimatedButton>
+            </View>
+
+            {/* Bank Picker */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>PAYMENT METHOD</Text>
+              <AnimatedButton
+                onPress={() => setShowBankPicker(true)}
+                style={[styles.selectBox, { backgroundColor: theme.background, borderColor: theme.border }]}
+              >
+                <Text style={[styles.selectBoxText, { color: theme.text }, !bank && { color: "#9aa3b5" }]}>
+                  {bank || "Select Bank or Wallet"}
+                </Text>
+                <ChevronDown size={16} color="#9aa3b5" />
+              </AnimatedButton>
+            </View>
+
+            {/* Account Number */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ACCOUNT NUMBER</Text>
+              <TextInput
+                value={account}
+                onChangeText={setAccount}
+                keyboardType="numeric"
+                placeholder="e.g. 0917 123 4567"
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.inputField, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+              />
+            </View>
+
+            {/* Save Button */}
+            <AnimatedButton
+              disabled={!name || !bank || !account}
+              onPress={handleSave}
+              style={[
+                styles.saveBtnWrapper,
+                (!name || !bank || !account) && styles.saveBtnDisabled,
+              ]}
+            >
+              <LinearGradient
+                colors={["#10B981", "#059669"]}
+                style={styles.saveBtn}
+              >
+                <Text style={styles.saveBtnText}>Save Recipient</Text>
+              </LinearGradient>
+            </AnimatedButton>
+          </View>
+        </BottomSheet>
+      )}
+
+      {!!selectedRecipient && (
+        <BottomSheet
+          isOpen={true}
+          onClose={() => setSelectedRecipient(null)}
+          title="Recipient Details"
+        >
+          {selectedRecipient && (
+            <View style={{ gap: 16 }}>
+              {/* Profile Card */}
+              <View style={[styles.detailCard, { backgroundColor: theme.background }]}>
+                <View style={styles.detailAvatarWrapper}>
+                  <Text style={styles.detailAvatarInitials}>
+                    {selectedRecipient.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={[styles.detailName, { color: theme.text }]}>{selectedRecipient.name}</Text>
+                <Text style={styles.detailUsername}>
+                  @{selectedRecipient.name.toLowerCase().replace(/\s+/g, "")}
+                </Text>
+                <View style={styles.detailCountryBadge}>
+                  <Text style={styles.detailCountryText}>
+                    {getCountryFlag(selectedRecipient.countryCode)}{" "}
+                    {getCountryName(selectedRecipient.countryCode).toUpperCase()}
+                  </Text>
                 </View>
               </View>
 
-              <View style={[styles.detailRow, { borderColor: theme.border }]}>
-                <Text style={styles.detailLabel}>ACCOUNT NUMBER</Text>
-                <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedRecipient.accountNumber}</Text>
+              {/* Info Box */}
+              <View style={[styles.detailInfoBox, { backgroundColor: theme.background }]}>
+                <View style={[styles.detailRow, { borderColor: theme.border }]}>
+                  <Text style={styles.detailLabel}>PAYMENT METHOD</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Building2 size={14} color="#10B981" />
+                    <Text style={[styles.detailValBold, { color: theme.text }]}>{selectedRecipient.bankName}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.detailRow, { borderColor: theme.border }]}>
+                  <Text style={styles.detailLabel}>ACCOUNT NUMBER</Text>
+                  <Text style={[styles.detailMono, { color: theme.textSecondary }]}>{selectedRecipient.accountNumber}</Text>
+                </View>
+
+                <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                  <Text style={styles.detailLabel}>CURRENCY</Text>
+                  <Text style={[styles.detailValBold, { color: theme.text }]}>{selectedRecipient.currency}</Text>
+                </View>
               </View>
 
-              <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-                <Text style={styles.detailLabel}>CURRENCY</Text>
-                <Text style={[styles.detailValBold, { color: theme.text }]}>{selectedRecipient.currency}</Text>
-              </View>
-            </View>
-
-            
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <AnimatedButton
-                onPress={() => {
-                  onSendToRecipient(selectedRecipient);
-                  setSelectedRecipient(null);
-                }}
-                style={styles.actionSendBtnWrapper}
-              >
-                <LinearGradient
-                  colors={["#10B981", "#059669"]}
-                  style={styles.actionSendBtn}
+              {/* Actions */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <AnimatedButton
+                  onPress={() => {
+                    onSendToRecipient(selectedRecipient);
+                    setSelectedRecipient(null);
+                  }}
+                  style={styles.actionSendBtnWrapper}
                 >
-                  <Send size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                  <Text style={styles.actionSendText}>SEND MONEY</Text>
-                </LinearGradient>
-              </AnimatedButton>
+                  <LinearGradient
+                    colors={["#10B981", "#059669"]}
+                    style={styles.actionSendBtn}
+                  >
+                    <Send size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                    <Text style={styles.actionSendText}>SEND MONEY</Text>
+                  </LinearGradient>
+                </AnimatedButton>
 
-              <AnimatedButton
-                onPress={() => {
-                  deleteRecipient(selectedRecipient.id);
-                  setSelectedRecipient(null);
-                }}
-                style={styles.actionDeleteBtn}
-              >
-                <Text style={styles.actionDeleteText}>DELETE</Text>
-              </AnimatedButton>
+                <AnimatedButton
+                  onPress={() => {
+                    deleteRecipient(selectedRecipient.id);
+                    setSelectedRecipient(null);
+                  }}
+                  style={styles.actionDeleteBtn}
+                >
+                  <Text style={styles.actionDeleteText}>DELETE</Text>
+                </AnimatedButton>
+              </View>
             </View>
+          )}
+        </BottomSheet>
+      )}
+
+      {showCountryPicker && (
+        <BottomSheet
+          isOpen={true}
+          onClose={() => setShowCountryPicker(false)}
+          title="Select Country"
+        >
+          <View style={{ paddingBottom: 20 }}>
+            {COUNTRIES.map((item) => (
+              <TouchableOpacity
+                key={item.code}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setCountryCode(item.code);
+                  setBank(""); 
+                  setShowCountryPicker(false);
+                }}
+                style={[
+                  styles.pickerRow,
+                  { borderColor: theme.border },
+                  countryCode === item.code && [styles.pickerRowActive, { backgroundColor: theme.border }],
+                ]}
+              >
+                <Text style={styles.pickerFlag}>{item.flag}</Text>
+                <Text style={[styles.pickerName, { color: theme.text }]}>{item.name}</Text>
+                {countryCode === item.code && <Check size={18} color="#10B981" />}
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
-      </BottomSheet>
+        </BottomSheet>
+      )}
 
       
-      <Modal visible={showCountryPicker} animationType="slide" transparent>
-        <View style={styles.pickerModalOverlay}>
-          <SafeAreaView style={[styles.pickerModalContent, { backgroundColor: theme.surface }]}>
-            <View style={[styles.pickerHeader, { borderColor: theme.border }]}>
-              <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Select Country</Text>
-              <AnimatedButton onPress={() => setShowCountryPicker(false)}>
-                <X size={20} color={theme.icon} />
-              </AnimatedButton>
-            </View>
-            <FlatList
-              data={COUNTRIES}
-              keyExtractor={(item) => item.code}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setCountryCode(item.code);
-                    setBank(""); 
-                    setShowCountryPicker(false);
-                  }}
-                  style={[
-                    styles.pickerRow,
-                    { borderColor: theme.border },
-                    countryCode === item.code && [styles.pickerRowActive, { backgroundColor: theme.border }],
-                  ]}
-                >
-                  <Text style={styles.pickerFlag}>{item.flag}</Text>
-                  <Text style={[styles.pickerName, { color: theme.text }]}>{item.name}</Text>
-                  {countryCode === item.code && <Check size={18} color="#10B981" />}
-                </TouchableOpacity>
-              )}
-            />
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      
-      <Modal visible={showBankPicker} animationType="slide" transparent>
-        <View style={styles.pickerModalOverlay}>
-          <SafeAreaView style={[styles.pickerModalContent, { backgroundColor: theme.surface }]}>
-            <View style={[styles.pickerHeader, { borderColor: theme.border }]}>
-              <Text style={[styles.pickerHeaderTitle, { color: theme.text }]}>Select Payment Method</Text>
-              <AnimatedButton onPress={() => setShowBankPicker(false)}>
-                <X size={20} color={theme.icon} />
-              </AnimatedButton>
-            </View>
-            <FlatList
-              data={paymentMethods}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setBank(item);
-                    setShowBankPicker(false);
-                  }}
-                  style={[styles.pickerRow, { borderColor: theme.border }, bank === item && [styles.pickerRowActive, { backgroundColor: theme.border }]]}
-                >
-                  <Building2 size={16} color="#10B981" style={{ marginRight: 12 }} />
-                  <Text style={[styles.pickerName, { color: theme.text }]}>{item}</Text>
-                  {bank === item && <Check size={18} color="#10B981" />}
-                </TouchableOpacity>
-              )}
-            />
-          </SafeAreaView>
-        </View>
-      </Modal>
+      {showBankPicker && (
+        <BottomSheet
+          isOpen={true}
+          onClose={() => setShowBankPicker(false)}
+          title="Select Payment Method"
+        >
+          <View style={{ paddingBottom: 20 }}>
+            {paymentMethods.map((item) => (
+              <TouchableOpacity
+                key={item}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setBank(item);
+                  setShowBankPicker(false);
+                }}
+                style={[styles.pickerRow, { borderColor: theme.border }, bank === item && [styles.pickerRowActive, { backgroundColor: theme.border }]]}
+              >
+                <Building2 size={16} color="#10B981" style={{ marginRight: 12 }} />
+                <Text style={[styles.pickerName, { color: theme.text }]}>{item}</Text>
+                {bank === item && <Check size={18} color="#10B981" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </BottomSheet>
+      )}
     </View>
   );
 }

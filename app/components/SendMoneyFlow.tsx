@@ -44,7 +44,6 @@ const COUNTRIES = [
   { name: "Vietnam", code: "VN", currency: "VND", flag: "🇻🇳", banks: ["Vietcombank", "BIDV", "VietinBank", "MoMo"] },
   { name: "Malaysia", code: "MY", currency: "MYR", flag: "🇲🇾", banks: ["Maybank", "CIMB", "Public Bank", "Touch n Go"] },
   { name: "Indonesia", code: "ID", currency: "IDR", flag: "🇮🇩", banks: ["BCA", "Mandiri", "BRI", "GoPay"] },
-  { name: "United States", code: "US", currency: "USD", flag: "🇺🇸", banks: ["Chase", "Bank of America", "Wells Fargo", "Venmo"] },
 ];
 
 interface SendMoneyFlowProps {
