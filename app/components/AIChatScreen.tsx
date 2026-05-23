@@ -673,7 +673,15 @@ Respond ONLY with valid JSON.`;
           system_instruction: {
             parts: [{ text: systemPrompt }],
           },
-          contents: [{ role: "user", parts: [{ text: text }] }],
+          contents: [
+            ...messages
+              .filter((m) => m.type === "text" || m.role === "user")
+              .map((m) => ({
+                role: m.role === "ai" ? "model" : "user",
+                parts: [{ text: m.text }],
+              })),
+            { role: "user", parts: [{ text: text }] }
+          ],
           generationConfig: {
             response_mime_type: "application/json",
             temperature: 0.2,
