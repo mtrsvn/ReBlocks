@@ -181,50 +181,7 @@ function findRecipientFromDatabase(query: string, recipients: Recipient[]) {
   }) || null;
 }
 
-type Intent =
-  | { type: "send"; recipient: string; amount: number; symbol: string; currency: string }
-  | { type: "balance" }
-  | { type: "recent" }
-  | { type: "send_prompt" }
-  | { type: "add_recipient" }
-  | { type: "rates"; country?: string }
-  | { type: "greeting" }
-  | { type: "help" };
 
-function parseIntent(text: string): Intent {
-  const lower = text.toLowerCase().trim();
-
-  if (/^(hi|hello|hey|greetings|kumusta|good morning|good afternoon|good evening)[.!\s]*$/i.test(lower)) return { type: "greeting" };
-
-  const rateKeywords = /rate|exchange|fx|convert/i;
-  if (rateKeywords.test(lower)) {
-    for (const c of COUNTRIES) {
-      if (lower.includes(c.name.toLowerCase()) || lower.includes(c.currency.toLowerCase())) {
-        return { type: "rates", country: c.name };
-      }
-    }
-    return { type: "rates" };
-  }
-
-  if (/^send\s*money$/i.test(lower) || /^send$/i.test(lower)) return { type: "send_prompt" };
-  if (/^add\s*(?:new\s*)?(?:recipient|contact|person)$/i.test(lower)) return { type: "add_recipient" };
-  if (/^check\s*balance$/i.test(lower) || /^balance$/i.test(lower)) return { type: "balance" };
-  if (/^recent\s*recipients?$/i.test(lower) || /^recent\s*transfers?$/i.test(lower)) return { type: "recent" };
-
-  const sendRe = /(?:send|transfer|pay)\s+([₱₮$€]?)(\d[\d,._]*)\s*(?:usdt|usd(?!t)|eur|php)?\s+(?:to\s+)?(.+)/i;
-  const m = text.match(sendRe);
-  if (m) {
-    const cur = detectCurrency(m[1] + " " + text);
-    const amount = parseFloat(m[2].replace(/[,_]/g, ""));
-    return { type: "send", recipient: m[3].trim(), amount, ...cur };
-  }
-
-  if (/balance|how much|wallet amount/i.test(lower)) return { type: "balance" };
-  if (/recent|last.*(?:send|transfer)|recipient|contact/i.test(lower)) return { type: "recent" };
-  if (/send|transfer|pay/i.test(lower)) return { type: "send_prompt" };
-
-  return { type: "help" };
-}
 
 
 
@@ -516,142 +473,205 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact, onHistory
   };
 
   const processAndRespond = async (text: string) => {
-    const intent = parseIntent(text);
     setIsTyping(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsTyping(false);
 
-    if (intent.type === "greeting") {
-      const greetingVariants = [
-        `Hello, ${firstName}! 👋 I'm your Smart Assistant. How can I help you with your finances today?`,
-        `Hi ${firstName}! ✨ Ready to send some money or check the latest rates?`,
-        `Hey ${firstName}! 😊 What can I do for you today? I can help with transfers, balances, and more!`,
-        `Hello ${firstName}! 🌟 Need help with your wallet? Just let me know!`
-      ];
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: greetingVariants[Math.floor(Math.random() * greetingVariants.length)],
+    try {
+      const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+      const model = process.env.EXPO_PUBLIC_GEMINI_MODEL;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `You are a friendly, helpful Smart Assistant for a fintech wallet app called ReBlocks.
+The user is ${firstName}.
+Your job is to parse the user's message and return a JSON object containing:
+- "text": Your conversational reply. Keep it friendly, use emojis, and format with markdown if helpful.
+- "intent": One of: "send", "send_prompt", "balance", "recent", "rates", "add_recipient", "greeting", or "help".
+- "recipient": (Optional) The name of the recipient if the intent is 'send'.
+- "amount": (Optional) The amount as a number if the intent is 'send'.
+- "currency": (Optional) The currency code (e.g. PHP, USD) if the intent is 'send'.
+- "symbol": (Optional) The currency symbol (e.g. ₱, $) if the intent is 'send'.
+- "country": (Optional) The country name if the intent is 'rates'.
+
+Context about the user:
+- Current balances: ₱ 128,663.55 PHP, ₮ 2,241.50 USDT, $ 2,241.50 USD
+- Saved recipients: ${recipients.map((r: any) => r.name).join(', ')}
+
+Respond ONLY with valid JSON.`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          contents: [
+            { role: "user", parts: [{ text: text }] }
+          ],
+          generationConfig: {
+            response_mime_type: "application/json",
+            temperature: 0.2
+          }
+        })
       });
-    } else if (intent.type === "send") {
-      const contact = findRecipientFromDatabase(intent.recipient, recipients);
-      if (!contact) {
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Failed to fetch");
+      }
+
+      const content = data.candidates[0].content.parts[0].text;
+      const intent = JSON.parse(content);
+
+      if (intent.text && !["recent", "rates", "balance"].includes(intent.intent)) {
         addAIMsg({
           role: "ai",
           type: "text",
-          text: `I couldn't find **"${intent.recipient}"** in your saved recipients.\n\nOpening add contact so you can save it now.`,
+          text: intent.text,
         });
-        if (onStartAddContact) {
-          onStartAddContact(intent.recipient);
+      }
+
+      if (intent.intent === "greeting") {
+        if (!intent.text) {
+           addAIMsg({
+             role: "ai",
+             type: "text",
+             text: `Hello, ${firstName}! 👋 I'm your Smart Assistant. How can I help you with your finances today?`,
+           });
         }
-        return;
-      }
-      if (!intent.amount || intent.amount <= 0) {
-        addAIMsg({
-          role: "ai",
-          type: "text",
-          text: `Got it — I found **${contact.name}** in your saved recipients. How much would you like to send? E.g. \"Send ₱500 to ${contact.name}\"`,
-        });
-        return;
-      }
-      if (onStartSend) {
-        addAIMsg({
-          role: "ai",
-          type: "text",
-          text: `Opening send flow for **${contact.name}** with **${intent.symbol}${intent.amount.toLocaleString()}**.`,
-        });
-        onStartSend(contact, intent.amount, intent.currency);
-        return;
-      }
-      const fee = calcFee(intent.amount, intent.currency);
-      addAIMsg({
-        role: "ai",
-        type: "confirmation",
-        txn: recipientToTxn(contact, intent.amount, intent.currency, intent.symbol, fee),
-        status: "pending",
-      });
-    } else if (intent.type === "balance") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: "Checking your accounts... 🏦\n\n💰 **Your current balances:**\n\n• ₱ 128,663.55 PHP\n• ₮ 2,241.50 USDT\n• $ 2,241.50 USD\n\nYour wallet is looking great! 🟢",
-      });
-    } else if (intent.type === "recent") {
-      const recentTx = transactions.filter((t) => t.type === 'send').slice(0, 3);
-      let text = "Pulling up your history... 📋\n\n";
-      if (recentTx.length === 0) {
-        text += "You don't have any recent transfers yet.";
-      } else {
-        text = "Here are your **recent transfers:**\n\n";
-        recentTx.forEach((tx) => {
-          text += `• ${tx.recipientName} — ${defaultCurrency === "USD" ? "$" : "₱"}${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} · ${new Date(tx.date).toLocaleDateString()}\n`;
-        });
-      }
-      addAIMsg({
-        role: "ai",
-        type: "recent",
-        text,
-      });
-    } else if (intent.type === "rates") {
-      if (intent.country) {
-        const c = COUNTRIES.find((c) => c.name === intent.country);
-        if (c) {
-          const usdRate = exchangeRates["USD"] || 0.018;
-          const curRate = exchangeRates[c.currency] || 1;
-          const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
-          const text = `Fetching the latest rates... 💱\n\n**Live Exchange Rate for ${c.name} (1 USD):**\n\n${c.flag} ${c.currency} → ${c.symbol}${formatFXRate(realRate)}\n\nGreat rate today! 📈`;
+      } else if (intent.intent === "send") {
+        const contact = intent.recipient ? findRecipientFromDatabase(intent.recipient, recipients) : null;
+        if (!contact) {
           addAIMsg({
             role: "ai",
             type: "text",
-            text,
+            text: `I couldn't find **"${intent.recipient || "that person"}"** in your saved recipients.\n\nOpening add contact so you can save it now.`,
           });
+          if (onStartAddContact) {
+            onStartAddContact(intent.recipient || "");
+          }
+          setIsTyping(false);
           return;
         }
+        if (!intent.amount || intent.amount <= 0) {
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: `Got it — I found **${contact.name}** in your saved recipients. How much would you like to send?`,
+          });
+          setIsTyping(false);
+          return;
+        }
+        if (onStartSend) {
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: `Opening send flow for **${contact.name}** with **${intent.symbol || ""}${intent.amount.toLocaleString()}**.`,
+          });
+          onStartSend(contact, intent.amount, intent.currency);
+          setIsTyping(false);
+          return;
+        }
+        const currency = intent.currency || "PHP";
+        const symbol = intent.symbol || "₱";
+        const fee = calcFee(intent.amount, currency);
+        addAIMsg({
+          role: "ai",
+          type: "confirmation",
+          txn: recipientToTxn(contact, intent.amount, currency, symbol, fee),
+          status: "pending",
+        });
+      } else if (intent.intent === "balance") {
+        addAIMsg({
+          role: "ai",
+          type: "text",
+          text: intent.text || "Checking your accounts... 🏦\n\n💰 **Your current balances:**\n\n• ₱ 128,663.55 PHP\n• ₮ 2,241.50 USDT\n• $ 2,241.50 USD\n\nYour wallet is looking great! 🟢",
+        });
+      } else if (intent.intent === "recent") {
+        const recentTx = transactions.filter((t: any) => t.type === 'send').slice(0, 3);
+        let textResponse = intent.text ? intent.text + "\n\n" : "Pulling up your history... 📋\n\n";
+        if (recentTx.length === 0) {
+          textResponse += "You don't have any recent transfers yet.";
+        } else {
+          textResponse += "Here are your **recent transfers:**\n\n";
+          recentTx.forEach((tx: any) => {
+            textResponse += `• ${tx.recipientName} — ${defaultCurrency === "USD" ? "$" : "₱"}${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} · ${new Date(tx.date).toLocaleDateString()}\n`;
+          });
+        }
+        addAIMsg({
+          role: "ai",
+          type: "recent",
+          text: textResponse,
+        });
+      } else if (intent.intent === "rates") {
+        if (intent.country) {
+          const c = COUNTRIES.find((c) => c.name.toLowerCase() === intent.country?.toLowerCase());
+          if (c) {
+            const usdRate = exchangeRates["USD"] || 0.018;
+            const curRate = exchangeRates[c.currency] || 1;
+            const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
+            const textResponse = `${intent.text ? intent.text + "\n\n" : "Fetching the latest rates... 💱\n\n"}**Live Exchange Rate for ${c.name} (1 USD):**\n\n${c.flag} ${c.currency} → ${c.symbol}${formatFXRate(realRate)}\n\nGreat rate today! 📈`;
+            addAIMsg({
+              role: "ai",
+              type: "text",
+              text: textResponse,
+            });
+            setIsTyping(false);
+            return;
+          }
+        }
+        
+        const allRates = COUNTRIES.map((c) => {
+          const usdRate = exchangeRates["USD"] || 0.018;
+          const curRate = exchangeRates[c.currency] || 1;
+          const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
+          return { ...c, rate: realRate };
+        });
+        let textResponse = `${intent.text ? intent.text + "\n\n" : "Fetching the latest rates... 💱\n\n"}**Live Exchange Rates (1 USD):**\n\n`;
+        allRates.forEach((r) => {
+          textResponse += `${r.flag} ${r.currency} → ${r.symbol}${formatFXRate(r.rate)}\n`;
+        });
+        textResponse += "\nGreat rates today! 📈";
+        addAIMsg({
+          role: "ai",
+          type: "text",
+          text: textResponse,
+        });
+      } else if (intent.intent === "add_recipient") {
+        if (!intent.text) {
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: "Opening the Add Recipient page for you now... 📝",
+          });
+        }
+        if (onStartAddContact) {
+          onStartAddContact("");
+        }
+      } else if (intent.intent === "send_prompt") {
+        if (!intent.text) {
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: "Sure! Tell me who to send to and how much.\n\nExamples:\n• \"Send ₱1000 to Maria\"\n• \"Send 50 USDT to Juan\"\n• \"Transfer ₱500 to @anareyes\"",
+          });
+        }
+      } else if (intent.intent === "help" && !intent.text) {
+        addAIMsg({
+          role: "ai",
+          type: "text",
+          text: "I'm not quite sure what you mean. 🤔\n\nBut I'd love to help you with:\n💸 **Sending money**\n💱 **Checking exchange rates**\n🕒 **Viewing recent transfers**\n👤 **Adding a recipient**\n\nHow can I assist you today? ✨",
+        });
       }
 
-      const allRates = COUNTRIES.map((c) => {
-        const usdRate = exchangeRates["USD"] || 0.018;
-        const curRate = exchangeRates[c.currency] || 1;
-        const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
-        return { ...c, rate: realRate };
-      });
-      let text = "Fetching the latest rates... 💱\n\n**Live Exchange Rates (1 USD):**\n\n";
-      allRates.forEach((r) => {
-        text += `${r.flag} ${r.currency} → ${r.symbol}${formatFXRate(r.rate)}\n`;
-      });
-      text += "\nGreat rates today! 📈";
+    } catch (error) {
+      console.error("Gemini API Error:", error);
       addAIMsg({
         role: "ai",
         type: "text",
-        text,
+        text: "Sorry, I'm having trouble connecting to my brain right now. 🧠⚡ Please try again later!",
       });
-    } else if (intent.type === "add_recipient") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: "Opening the Add Recipient page for you now... 📝",
-      });
-      if (onStartAddContact) {
-        onStartAddContact("");
-      }
-    } else if (intent.type === "send_prompt") {
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: "Sure! Tell me who to send to and how much.\n\nExamples:\n• \"Send ₱1000 to Maria\"\n• \"Send 50 USDT to Juan\"\n• \"Transfer ₱500 to @anareyes\"",
-      });
-    } else {
-      const helpVariants = [
-        "I'm not quite sure what you mean. 🤔\n\nBut I'd love to help you with:\n💸 **Sending money** (e.g. \"Send ₱500 to Juan\")\n💱 **Checking exchange rates** (e.g. \"USD to PHP rate\")\n🕒 **Viewing recent transfers** (e.g. \"Show recent transfers\")\n👤 **Adding a recipient** (e.g. \"Add new contact\")\n\nHow can I assist you today? ✨",
-        "Oops, I didn't catch that! 😅\n\nHere are some things I can do for you:\n• **Send funds instantly** 🚀\n• **Check live exchange rates** 📈\n• **Show your transfer history** 📋\n• **Add a new recipient** 👤\n\nJust let me know what you need!",
-        "I'm still learning, so I might have missed that! 🤖\n\nYou can try asking me to:\n👉 **\"Send ₱1,000 to Maria\"**\n👉 **\"What's the exchange rate for Singapore?\"**\n👉 **\"Show my recent transfers\"**\n👉 **\"Add a new recipient\"**\n\nWhat would you like to do? 🌟"
-      ];
-      const randomHelp = helpVariants[Math.floor(Math.random() * helpVariants.length)];
-      addAIMsg({
-        role: "ai",
-        type: "text",
-        text: randomHelp,
-      });
+    } finally {
+      setIsTyping(false);
     }
   };
 
