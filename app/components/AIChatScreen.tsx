@@ -28,8 +28,6 @@ import { AnimatedButton } from "./AnimatedButton";
 import { Recipient, useApp, useTheme } from "../context";
 import { getCountryFlag } from "../utils/countries";
 
-
-
 interface TxnData {
   recipient: string;
   username: string;
@@ -73,8 +71,6 @@ interface AIRecentMsg {
 
 type ChatMessage = UserMsg | AITextMsg | AIConfirmMsg | AIRecentMsg;
 
-
-
 const CHIPS = [
   "Send money",
   "Add recipient",
@@ -83,12 +79,54 @@ const CHIPS = [
 ];
 
 const COUNTRIES = [
-  { name: "Philippines", flag: "🇵🇭", currency: "PHP", pair: "USD/PHP", rate: 58.42, symbol: "₱" },
-  { name: "Singapore", flag: "🇸🇬", currency: "SGD", pair: "USD/SGD", rate: 1.342, symbol: "S$" },
-  { name: "Thailand", flag: "🇹🇭", currency: "THB", pair: "USD/THB", rate: 34.65, symbol: "฿" },
-  { name: "Vietnam", flag: "🇻🇳", currency: "VND", pair: "USD/VND", rate: 25450, symbol: "₫" },
-  { name: "Malaysia", flag: "🇲🇾", currency: "MYR", pair: "USD/MYR", rate: 4.18, symbol: "RM" },
-  { name: "Indonesia", flag: "🇮🇩", currency: "IDR", pair: "USD/IDR", rate: 16120, symbol: "Rp" },
+  {
+    name: "Philippines",
+    flag: "🇵🇭",
+    currency: "PHP",
+    pair: "USD/PHP",
+    rate: 58.42,
+    symbol: "₱",
+  },
+  {
+    name: "Singapore",
+    flag: "🇸🇬",
+    currency: "SGD",
+    pair: "USD/SGD",
+    rate: 1.342,
+    symbol: "S$",
+  },
+  {
+    name: "Thailand",
+    flag: "🇹🇭",
+    currency: "THB",
+    pair: "USD/THB",
+    rate: 34.65,
+    symbol: "฿",
+  },
+  {
+    name: "Vietnam",
+    flag: "🇻🇳",
+    currency: "VND",
+    pair: "USD/VND",
+    rate: 25450,
+    symbol: "₫",
+  },
+  {
+    name: "Malaysia",
+    flag: "🇲🇾",
+    currency: "MYR",
+    pair: "USD/MYR",
+    rate: 4.18,
+    symbol: "RM",
+  },
+  {
+    name: "Indonesia",
+    flag: "🇮🇩",
+    currency: "IDR",
+    pair: "USD/IDR",
+    rate: 16120,
+    symbol: "Rp",
+  },
 ];
 
 const formatFXRate = (rate: number) => {
@@ -104,8 +142,6 @@ const formatFXRate = (rate: number) => {
   return rate.toFixed(2);
 };
 
-
-
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -117,10 +153,9 @@ function detectCurrency(text: string): { symbol: string; currency: string } {
   return { symbol: "₱", currency: "PHP" };
 }
 
-
-
 function calcFee(amount: number, currency: string) {
-  if (currency === "PHP") return parseFloat(Math.max(5, amount * 0.005).toFixed(2));
+  if (currency === "PHP")
+    return parseFloat(Math.max(5, amount * 0.005).toFixed(2));
   return parseFloat(Math.max(0.1, amount * 0.005).toFixed(4));
 }
 
@@ -137,7 +172,13 @@ function makeUsername(name: string) {
   return `@${cleaned.slice(0, 18) || "recipient"}`;
 }
 
-function recipientToTxn(recipient: Recipient, amount: number, currency: string, symbol: string, fee: number): TxnData {
+function recipientToTxn(
+  recipient: Recipient,
+  amount: number,
+  currency: string,
+  symbol: string,
+  fee: number,
+): TxnData {
   return {
     recipient: recipient.name,
     username: makeUsername(recipient.name),
@@ -160,30 +201,33 @@ function findRecipientFromDatabase(query: string, recipients: Recipient[]) {
     const bank = normalizeQuery(recipient.bankName);
     const account = normalizeQuery(recipient.accountNumber || "");
     const country = normalizeQuery(recipient.countryCode);
-    return cleaned === name || cleaned === bank || cleaned === account || cleaned === country;
+    return (
+      cleaned === name ||
+      cleaned === bank ||
+      cleaned === account ||
+      cleaned === country
+    );
   });
   if (exact) return exact;
 
-  return recipients.find((recipient) => {
-    const name = normalizeQuery(recipient.name);
-    const bank = normalizeQuery(recipient.bankName);
-    const account = normalizeQuery(recipient.accountNumber || "");
-    const country = normalizeQuery(recipient.countryCode);
-    return (
-      name.includes(cleaned) ||
-      cleaned.includes(name) ||
-      bank.includes(cleaned) ||
-      cleaned.includes(bank) ||
-      account.includes(cleaned) ||
-      cleaned.includes(account) ||
-      country.includes(cleaned)
-    );
-  }) || null;
+  return (
+    recipients.find((recipient) => {
+      const name = normalizeQuery(recipient.name);
+      const bank = normalizeQuery(recipient.bankName);
+      const account = normalizeQuery(recipient.accountNumber || "");
+      const country = normalizeQuery(recipient.countryCode);
+      return (
+        name.includes(cleaned) ||
+        cleaned.includes(name) ||
+        bank.includes(cleaned) ||
+        cleaned.includes(bank) ||
+        account.includes(cleaned) ||
+        cleaned.includes(account) ||
+        country.includes(cleaned)
+      );
+    }) || null
+  );
 }
-
-
-
-
 
 function FormattedText({ text }: { text: string }) {
   const theme = useTheme();
@@ -228,22 +272,32 @@ function ConfirmationCard({
         </View>
 
         <View style={styles.cardContent}>
-          
           <View style={styles.recipientRow}>
-            <View style={[styles.flagBadge, { backgroundColor: theme.background }]}>
+            <View
+              style={[styles.flagBadge, { backgroundColor: theme.background }]}
+            >
               <Text style={{ fontSize: 20 }}>{txn.flag}</Text>
             </View>
             <View>
-              <Text style={[styles.recipientName, { color: theme.text }]}>{txn.recipient}</Text>
-              <Text style={[styles.recipientSub, { color: theme.textSecondary }]}>
+              <Text style={[styles.recipientName, { color: theme.text }]}>
+                {txn.recipient}
+              </Text>
+              <Text
+                style={[styles.recipientSub, { color: theme.textSecondary }]}
+              >
                 {txn.username} · {txn.country}
               </Text>
             </View>
           </View>
 
-          
-          <View style={[styles.amountInset, { backgroundColor: theme.background }]}>
-            <Text style={[styles.amountInsetLabel, { color: theme.textSecondary }]}>YOU SEND</Text>
+          <View
+            style={[styles.amountInset, { backgroundColor: theme.background }]}
+          >
+            <Text
+              style={[styles.amountInsetLabel, { color: theme.textSecondary }]}
+            >
+              YOU SEND
+            </Text>
             <Text style={[styles.amountInsetVal, { color: theme.text }]}>
               {txn.symbol}{" "}
               {txn.amount.toLocaleString(undefined, {
@@ -251,26 +305,44 @@ function ConfirmationCard({
                 maximumFractionDigits: 2,
               })}
             </Text>
-            <Text style={[styles.amountInsetCurrency, { color: theme.textSecondary }]}>{txn.currency}</Text>
+            <Text
+              style={[
+                styles.amountInsetCurrency,
+                { color: theme.textSecondary },
+              ]}
+            >
+              {txn.currency}
+            </Text>
           </View>
 
-          
           <View style={{ gap: 6, marginBottom: 16 }}>
             <View style={styles.breakdownRow}>
-              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Amount</Text>
+              <Text
+                style={[styles.breakdownLabel, { color: theme.textSecondary }]}
+              >
+                Amount
+              </Text>
               <Text style={[styles.breakdownVal, { color: theme.text }]}>
                 {txn.symbol} {txn.amount.toFixed(2)}
               </Text>
             </View>
             <View style={styles.breakdownRow}>
-              <Text style={[styles.breakdownLabel, { color: theme.textSecondary }]}>Network Fee</Text>
+              <Text
+                style={[styles.breakdownLabel, { color: theme.textSecondary }]}
+              >
+                Network Fee
+              </Text>
               <Text style={[styles.breakdownVal, { color: theme.text }]}>
                 {txn.symbol} {txn.fee.toFixed(2)}
               </Text>
             </View>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            <View
+              style={[styles.dividerLine, { backgroundColor: theme.border }]}
+            />
             <View style={styles.breakdownRow}>
-              <Text style={[styles.totalLabel, { color: theme.text }]}>Total</Text>
+              <Text style={[styles.totalLabel, { color: theme.text }]}>
+                Total
+              </Text>
               <Text style={styles.totalVal}>
                 {txn.symbol}{" "}
                 {txn.total.toLocaleString(undefined, {
@@ -281,14 +353,20 @@ function ConfirmationCard({
             </View>
           </View>
 
-          
           {status === "pending" && (
             <View style={styles.actionRow}>
               <AnimatedButton
                 onPress={() => onCancel(message.id)}
-                style={[styles.cancelBtn, { backgroundColor: theme.background }]}
+                style={[
+                  styles.cancelBtn,
+                  { backgroundColor: theme.background },
+                ]}
               >
-                <Text style={[styles.cancelText, { color: theme.textSecondary }]}>Cancel</Text>
+                <Text
+                  style={[styles.cancelText, { color: theme.textSecondary }]}
+                >
+                  Cancel
+                </Text>
               </AnimatedButton>
               <AnimatedButton
                 onPress={() => onConfirm(message.id)}
@@ -305,32 +383,68 @@ function ConfirmationCard({
           )}
 
           {status === "processing" && (
-            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
+            <View
+              style={[
+                styles.loadingWrapper,
+                { backgroundColor: theme.background },
+              ]}
+            >
               <ActivityIndicator size="small" color="#10B981" />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Sending via wallet transfer…</Text>
+              <Text
+                style={[styles.loadingText, { color: theme.textSecondary }]}
+              >
+                Sending via wallet transfer…
+              </Text>
             </View>
           )}
 
           {status === "completed" && (
-            <View style={[styles.successWrapper, { backgroundColor: theme.background }]}>
+            <View
+              style={[
+                styles.successWrapper,
+                { backgroundColor: theme.background },
+              ]}
+            >
               <CheckCircle size={24} color="#48bb78" />
-              <Text style={[styles.successText, { color: theme.text }]}>Transaction Completed!</Text>
-              <Text style={[styles.txnIdText, { color: theme.textSecondary }]}>ID: {txnId}</Text>
+              <Text style={[styles.successText, { color: theme.text }]}>
+                Transaction Completed!
+              </Text>
+              <Text style={[styles.txnIdText, { color: theme.textSecondary }]}>
+                ID: {txnId}
+              </Text>
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => onSendAgain(txn)}
-                style={[styles.againBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                style={[
+                  styles.againBtn,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
               >
-                <RotateCcw size={12} color="#10B981" style={{ marginRight: 4 }} />
+                <RotateCcw
+                  size={12}
+                  color="#10B981"
+                  style={{ marginRight: 4 }}
+                />
                 <Text style={styles.againText}>Send Again</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {status === "cancelled" && (
-            <View style={[styles.loadingWrapper, { backgroundColor: theme.background }]}>
+            <View
+              style={[
+                styles.loadingWrapper,
+                { backgroundColor: theme.background },
+              ]}
+            >
               <X size={14} color="#ef4444" />
-              <Text style={{ fontSize: 12, color: theme.textSecondary, fontWeight: "600" }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: theme.textSecondary,
+                  fontWeight: "600",
+                }}
+              >
                 Cancelled
               </Text>
             </View>
@@ -410,7 +524,11 @@ function MessageBubble({
                 }}
               >
                 <Clock size={15} color="#ffffff" style={{ marginRight: 8 }} />
-                <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>Check your history</Text>
+                <Text
+                  style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}
+                >
+                  Check your history
+                </Text>
               </LinearGradient>
             </AnimatedButton>
           )}
@@ -431,17 +549,30 @@ function MessageBubble({
   );
 }
 
-
-
 interface AIChatScreenProps {
   onBack: () => void;
-  onStartSend?: (recipient: Recipient, amount?: number, currency?: string) => void;
+  onStartSend?: (
+    recipient: Recipient,
+    amount?: number,
+    currency?: string,
+  ) => void;
   onStartAddContact?: (name: string) => void;
   onHistory?: () => void;
 }
 
-export function AIChatScreen({ onBack, onStartSend, onStartAddContact, onHistory }: AIChatScreenProps) {
-  const { recipients, transactions, exchangeRates, defaultCurrency, userProfile } = useApp();
+export function AIChatScreen({
+  onBack,
+  onStartSend,
+  onStartAddContact,
+  onHistory,
+}: AIChatScreenProps) {
+  const {
+    recipients,
+    transactions,
+    exchangeRates,
+    defaultCurrency,
+    userProfile,
+  } = useApp();
   const firstName = userProfile?.fullName?.split(" ")[0] || "there";
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -476,8 +607,7 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact, onHistory
     setIsTyping(true);
 
     try {
-      // Proxy request through our local backend to keep API keys secure
-      const url = `http://localhost:5000/api/chat`;
+      const url = `https://reblocks.onrender.com/api/chat`;
 
       const systemPrompt = `You are a friendly, helpful Smart Assistant for a fintech wallet app called ReBlocks.
 The user is ${firstName}.
@@ -492,7 +622,7 @@ Your job is to parse the user's message and return a JSON object containing:
 
 Context about the user:
 - Current balances: ₱ 128,663.55 PHP, ₮ 2,241.50 USDT, $ 2,241.50 USD
-- Saved recipients: ${recipients.map((r: any) => r.name).join(', ')}
+- Saved recipients: ${recipients.map((r: any) => r.name).join(", ")}
 
 Respond ONLY with valid JSON.`;
 
@@ -501,16 +631,14 @@ Respond ONLY with valid JSON.`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system_instruction: {
-            parts: [{ text: systemPrompt }]
+            parts: [{ text: systemPrompt }],
           },
-          contents: [
-            { role: "user", parts: [{ text: text }] }
-          ],
+          contents: [{ role: "user", parts: [{ text: text }] }],
           generationConfig: {
             response_mime_type: "application/json",
-            temperature: 0.2
-          }
-        })
+            temperature: 0.2,
+          },
+        }),
       });
 
       const data = await response.json();
@@ -521,7 +649,10 @@ Respond ONLY with valid JSON.`;
       const content = data.candidates[0].content.parts[0].text;
       const intent = JSON.parse(content);
 
-      if (intent.text && !["recent", "rates", "balance"].includes(intent.intent)) {
+      if (
+        intent.text &&
+        !["recent", "rates", "balance"].includes(intent.intent)
+      ) {
         addAIMsg({
           role: "ai",
           type: "text",
@@ -531,14 +662,16 @@ Respond ONLY with valid JSON.`;
 
       if (intent.intent === "greeting") {
         if (!intent.text) {
-           addAIMsg({
-             role: "ai",
-             type: "text",
-             text: `Hello, ${firstName}! 👋 I'm your Smart Assistant. How can I help you with your finances today?`,
-           });
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: `Hello, ${firstName}! 👋 I'm your Smart Assistant. How can I help you with your finances today?`,
+          });
         }
       } else if (intent.intent === "send") {
-        const contact = intent.recipient ? findRecipientFromDatabase(intent.recipient, recipients) : null;
+        const contact = intent.recipient
+          ? findRecipientFromDatabase(intent.recipient, recipients)
+          : null;
         if (!contact) {
           addAIMsg({
             role: "ai",
@@ -583,17 +716,23 @@ Respond ONLY with valid JSON.`;
         addAIMsg({
           role: "ai",
           type: "text",
-          text: intent.text || "Checking your accounts... 🏦\n\n💰 **Your current balances:**\n\n• ₱ 128,663.55 PHP\n• ₮ 2,241.50 USDT\n• $ 2,241.50 USD\n\nYour wallet is looking great! 🟢",
+          text:
+            intent.text ||
+            "Checking your accounts... 🏦\n\n💰 **Your current balances:**\n\n• ₱ 128,663.55 PHP\n• ₮ 2,241.50 USDT\n• $ 2,241.50 USD\n\nYour wallet is looking great! 🟢",
         });
       } else if (intent.intent === "recent") {
-        const recentTx = transactions.filter((t: any) => t.type === 'send').slice(0, 3);
-        let textResponse = intent.text ? intent.text + "\n\n" : "Pulling up your history... 📋\n\n";
+        const recentTx = transactions
+          .filter((t: any) => t.type === "send")
+          .slice(0, 3);
+        let textResponse = intent.text
+          ? intent.text + "\n\n"
+          : "Pulling up your history... 📋\n\n";
         if (recentTx.length === 0) {
           textResponse += "You don't have any recent transfers yet.";
         } else {
           textResponse += "Here are your **recent transfers:**\n\n";
           recentTx.forEach((tx: any) => {
-            textResponse += `• ${tx.recipientName} — ${defaultCurrency === "USD" ? "$" : "₱"}${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2})} · ${new Date(tx.date).toLocaleDateString()}\n`;
+            textResponse += `• ${tx.recipientName} — ${defaultCurrency === "USD" ? "$" : "₱"}${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} · ${new Date(tx.date).toLocaleDateString()}\n`;
           });
         }
         addAIMsg({
@@ -603,7 +742,9 @@ Respond ONLY with valid JSON.`;
         });
       } else if (intent.intent === "rates") {
         if (intent.country) {
-          const c = COUNTRIES.find((c) => c.name.toLowerCase() === intent.country?.toLowerCase());
+          const c = COUNTRIES.find(
+            (c) => c.name.toLowerCase() === intent.country?.toLowerCase(),
+          );
           if (c) {
             const usdRate = exchangeRates["USD"] || 0.018;
             const curRate = exchangeRates[c.currency] || 1;
@@ -618,7 +759,7 @@ Respond ONLY with valid JSON.`;
             return;
           }
         }
-        
+
         const allRates = COUNTRIES.map((c) => {
           const usdRate = exchangeRates["USD"] || 0.018;
           const curRate = exchangeRates[c.currency] || 1;
@@ -651,7 +792,7 @@ Respond ONLY with valid JSON.`;
           addAIMsg({
             role: "ai",
             type: "text",
-            text: "Sure! Tell me who to send to and how much.\n\nExamples:\n• \"Send ₱1000 to Maria\"\n• \"Send 50 USDT to Juan\"\n• \"Transfer ₱500 to @anareyes\"",
+            text: 'Sure! Tell me who to send to and how much.\n\nExamples:\n• "Send ₱1000 to Maria"\n• "Send 50 USDT to Juan"\n• "Transfer ₱500 to @anareyes"',
           });
         }
       } else if (intent.intent === "help" && !intent.text) {
@@ -661,7 +802,6 @@ Respond ONLY with valid JSON.`;
           text: "I'm not quite sure what you mean. 🤔\n\nBut I'd love to help you with:\n💸 **Sending money**\n💱 **Checking exchange rates**\n🕒 **Viewing recent transfers**\n👤 **Adding a recipient**\n\nHow can I assist you today? ✨",
         });
       }
-
     } catch (error) {
       console.error("Gemini API Error:", error);
       addAIMsg({
@@ -678,7 +818,10 @@ Respond ONLY with valid JSON.`;
     const text = (overrideText ?? inputText).trim();
     if (!text || isTyping) return;
     setInputText("");
-    setMessages((prev) => [...prev, { id: uid(), role: "user", text } as UserMsg]);
+    setMessages((prev) => [
+      ...prev,
+      { id: uid(), role: "user", text } as UserMsg,
+    ]);
     await processAndRespond(text);
   };
 
@@ -687,17 +830,18 @@ Respond ONLY with valid JSON.`;
       prev.map((m) =>
         m.id === msgId && m.role === "ai" && m.type === "confirmation"
           ? { ...m, status: "processing" }
-          : m
-      )
+          : m,
+      ),
     );
     setTimeout(() => {
-      const txnId = "TXN-" + Math.random().toString(16).slice(2, 10).toUpperCase();
+      const txnId =
+        "TXN-" + Math.random().toString(16).slice(2, 10).toUpperCase();
       setMessages((prev) =>
         prev.map((m) =>
           m.id === msgId && m.role === "ai" && m.type === "confirmation"
             ? { ...m, status: "completed", txnId }
-            : m
-        )
+            : m,
+        ),
       );
     }, 2200);
   };
@@ -707,8 +851,8 @@ Respond ONLY with valid JSON.`;
       prev.map((m) =>
         m.id === msgId && m.role === "ai" && m.type === "confirmation"
           ? { ...m, status: "cancelled" }
-          : m
-      )
+          : m,
+      ),
     );
     setTimeout(async () => {
       setIsTyping(true);
@@ -727,8 +871,6 @@ Respond ONLY with valid JSON.`;
     setInputText(text);
   };
 
-
-
   const canSend = inputText.trim().length > 0 && !isTyping;
 
   return (
@@ -737,9 +879,9 @@ Respond ONLY with valid JSON.`;
       keyboardVerticalOffset={Platform.OS === "ios" ? 48 : 0}
       style={styles.keyboardContainer}
     >
-      <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
-
-        
+      <View
+        style={[styles.mainContainer, { backgroundColor: theme.background }]}
+      >
         <View style={[styles.header, { borderColor: theme.border }]}>
           <AnimatedButton
             onPress={onBack}
@@ -751,11 +893,12 @@ Respond ONLY with valid JSON.`;
             <View style={styles.botAvatar}>
               <Bot size={17} color="white" />
             </View>
-            <Text style={[styles.headerTitleText, { color: theme.text }]}>Smart Assistant</Text>
+            <Text style={[styles.headerTitleText, { color: theme.text }]}>
+              Smart Assistant
+            </Text>
           </View>
         </View>
 
-        
         <ScrollView
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
@@ -779,13 +922,17 @@ Respond ONLY with valid JSON.`;
               <View style={styles.botAvatar}>
                 <Bot size={13} color="white" />
               </View>
-              <View style={[styles.typingDotsCard, { backgroundColor: theme.surface }]}>
+              <View
+                style={[
+                  styles.typingDotsCard,
+                  { backgroundColor: theme.surface },
+                ]}
+              >
                 <ActivityIndicator size="small" color="#9aa3b5" />
               </View>
             </View>
           )}
 
-          
           {messages.length <= 1 && (
             <ScrollView
               horizontal
@@ -798,20 +945,38 @@ Respond ONLY with valid JSON.`;
                 <AnimatedButton
                   key={chip}
                   onPress={() => handleSend(chip)}
-                  style={[styles.chipBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                  style={[
+                    styles.chipBtn,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                    },
+                  ]}
                 >
-                  <Text style={[styles.chipBtnText, { color: theme.textSecondary }]}>{chip}</Text>
+                  <Text
+                    style={[styles.chipBtnText, { color: theme.textSecondary }]}
+                  >
+                    {chip}
+                  </Text>
                 </AnimatedButton>
               ))}
             </ScrollView>
           )}
-
         </ScrollView>
 
-        
         <SafeAreaView style={{ backgroundColor: theme.background }}>
-          <View style={[styles.inputBar, { backgroundColor: theme.background, borderColor: theme.border }]}>
-            <View style={[styles.insetInputContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View
+            style={[
+              styles.inputBar,
+              { backgroundColor: theme.background, borderColor: theme.border },
+            ]}
+          >
+            <View
+              style={[
+                styles.insetInputContainer,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+            >
               <TextInput
                 value={inputText}
                 onChangeText={setInputText}
@@ -822,7 +987,9 @@ Respond ONLY with valid JSON.`;
               />
             </View>
             <AnimatedButton
-              onPress={inputText.trim().length > 0 ? () => handleSend() : undefined}
+              onPress={
+                inputText.trim().length > 0 ? () => handleSend() : undefined
+              }
               style={styles.sendBtnWrapper}
             >
               {inputText.trim().length > 0 ? (
@@ -833,7 +1000,9 @@ Respond ONLY with valid JSON.`;
                   <ArrowUp size={18} color="#ffffff" />
                 </LinearGradient>
               ) : (
-                <View style={[styles.sendBtn, { backgroundColor: theme.surface }]}>
+                <View
+                  style={[styles.sendBtn, { backgroundColor: theme.surface }]}
+                >
                   <ArrowUp size={18} color={theme.icon} />
                 </View>
               )}
@@ -943,7 +1112,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
-  
+
   confirmCard: {
     flex: 1,
     backgroundColor: "#ffffff",
