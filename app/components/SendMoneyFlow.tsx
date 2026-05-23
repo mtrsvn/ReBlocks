@@ -105,6 +105,8 @@ export function SendMoneyFlow({ onBack, preselectedRecipient, prefilledAmount, p
   const exchangeRate = exchangeRates[sendCurrency] || 1;
   const defaultCurRate = exchangeRates[defaultCurrency] || (defaultCurrency === "USD" ? 0.018 : 1);
   const receiveAmount = parseFloat(sendAmount) || 0;
+  const targetCurrency = selectedRecipient ? selectedRecipient.currency : newCountry.currency;
+  const finalRecipientAmount = sendCurrency === "USD" && targetCurrency !== "USD" ? receiveAmount * (exchangeRates[targetCurrency] / exchangeRates["USD"]) : receiveAmount;
 
   const phpValue = sendCurrency === "PHP" ? receiveAmount : (exchangeRate !== 0 ? receiveAmount / exchangeRate : 0);
   const baseEquivalent = phpValue * defaultCurRate;
@@ -492,7 +494,28 @@ useEffect(() => {
 
             
             <View style={[styles.flatCard, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
-              <Text style={styles.inputCardLabel}>Amount to Send ({sendCurrency})</Text>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <Text style={[styles.inputCardLabel, { marginBottom: 0 }]}>Amount to Send ({sendCurrency})</Text>
+                <AnimatedButton
+                  onPress={() => {
+                    const usdToTargetRate = exchangeRates[targetCurrency] / (exchangeRates["USD"] || 0.018);
+                    if (sendCurrency === "USD") {
+                      const newAmount = receiveAmount * usdToTargetRate;
+                      setSendAmount(newAmount > 0 ? newAmount.toFixed(targetCurrency === "VND" ? 0 : 2) : "");
+                      setSendCurrency(targetCurrency);
+                    } else {
+                      const newAmount = receiveAmount / usdToTargetRate;
+                      setSendAmount(newAmount > 0 ? newAmount.toFixed(2) : "");
+                      setSendCurrency("USD");
+                    }
+                  }}
+                  style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: "#10B981" }}>
+                    SWITCH TO {sendCurrency === "USD" ? targetCurrency : "USD"}
+                  </Text>
+                </AnimatedButton>
+              </View>
               <View style={styles.amountInputContainer}>
                 <Text style={styles.currencySymbol}>{sendCurrency}</Text>
                 <TextInput
@@ -515,11 +538,13 @@ useEffect(() => {
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
                 </View>
                 <Text style={[styles.calcVal, { color: theme.text }]}>
-                  1 {sendCurrency} ={" "}
-                  {sendCurrency === defaultCurrency
-                    ? "1.00"
-                    : ((defaultCurRate / exchangeRate) || 0).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
-                  {defaultCurrency}
+                  {sendCurrency === "USD" && targetCurrency !== "USD" ? (
+                    `1 USD = ${(exchangeRates[targetCurrency] / exchangeRates["USD"]).toLocaleString(undefined, { maximumFractionDigits: targetCurrency === "VND" ? 0 : 4 })} ${targetCurrency}`
+                  ) : (
+                    `1 ${sendCurrency} = ${sendCurrency === defaultCurrency
+                      ? "1.00"
+                      : ((defaultCurRate / exchangeRate) || 0).toFixed(sendCurrency === "VND" ? 6 : 4)} ${defaultCurrency}`
+                  )}
                 </Text>
               </View>
 
@@ -539,6 +564,16 @@ useEffect(() => {
                   <Text style={styles.calcLabel}>Estimated Arrival</Text>
                 </View>
                 <Text style={[styles.calcVal, { color: "#10B981" }]}>Instant</Text>
+              </View>
+
+              <View style={styles.calcRow}>
+                <View style={styles.labelCol}>
+                  <ArrowRight size={14} color="#9aa3b5" style={{ marginRight: 6 }} />
+                  <Text style={styles.calcLabel}>Recipient Receives</Text>
+                </View>
+                <Text style={[styles.calcVal, { color: "#10B981" }]}>
+                  {finalRecipientAmount.toLocaleString(undefined, { minimumFractionDigits: targetCurrency === "VND" ? 0 : 2, maximumFractionDigits: targetCurrency === "VND" ? 0 : 2 })} {targetCurrency}
+                </Text>
               </View>
 
               <View style={[styles.calcDivider, { backgroundColor: theme.border }]} />
@@ -593,7 +628,7 @@ useEffect(() => {
                 <View style={styles.reviewCol}>
                   <Text style={styles.reviewCap}>RECEIVING</Text>
                   <Text style={[styles.reviewAmt, { color: "#10B981" }]}>
-                    {sendCurrency} {parseFloat(sendAmount).toLocaleString()}
+                    {targetCurrency} {finalRecipientAmount.toLocaleString(undefined, { minimumFractionDigits: targetCurrency === "VND" ? 0 : 2, maximumFractionDigits: targetCurrency === "VND" ? 0 : 2 })}
                   </Text>
                   <Text style={styles.reviewSub}>
                     {selectedRecipient?.bankName || newBank}
@@ -614,11 +649,13 @@ useEffect(() => {
                 <View style={styles.calcRow}>
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
                   <Text style={[styles.calcValBold, { color: theme.text }]}>
-                    1 {sendCurrency} ={" "}
-                    {sendCurrency === defaultCurrency
-                      ? "1.00"
-                      : ((defaultCurRate / exchangeRate) || 0).toFixed(sendCurrency === "VND" ? 6 : 4)}{" "}
-                    {defaultCurrency}
+                    {sendCurrency === "USD" && targetCurrency !== "USD" ? (
+                      `1 USD = ${(exchangeRates[targetCurrency] / exchangeRates["USD"]).toLocaleString(undefined, { maximumFractionDigits: targetCurrency === "VND" ? 0 : 4 })} ${targetCurrency}`
+                    ) : (
+                      `1 ${sendCurrency} = ${sendCurrency === defaultCurrency
+                        ? "1.00"
+                        : ((defaultCurRate / exchangeRate) || 0).toFixed(sendCurrency === "VND" ? 6 : 4)} ${defaultCurrency}`
+                    )}
                   </Text>
                 </View>
 
