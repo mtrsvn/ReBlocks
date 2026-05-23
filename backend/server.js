@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { ethers } = require("ethers");
+const axios = require("axios");
 
 const app = express();
 app.use(cors());
@@ -66,26 +67,26 @@ app.post("/api/chat", async (req, res) => {
     const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
     if (!apiKey) {
-      return res.status(500).json({ error: "Gemini API Key is not configured on the server." });
+      console.error("Missing GEMINI_API_KEY");
+      return res.status(500).json({ error: { message: "Gemini API Key is not configured on the server." } });
     }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const response = await fetch(url, {
-      method: "POST",
+    const response = await axios.post(url, req.body, {
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body)
+      validateStatus: () => true // Allow us to handle HTTP errors manually
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error?.message || "Failed to fetch from Gemini");
+    if (response.status !== 200) {
+      console.error("Gemini API Error Response:", response.data);
+      return res.status(500).json({ error: { message: response.data?.error?.message || "Failed to fetch from Gemini" } });
     }
 
-    res.json(data);
+    res.json(response.data);
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Backend Proxy Error:", error);
+    res.status(500).json({ error: { message: error.message } });
   }
 });
 
