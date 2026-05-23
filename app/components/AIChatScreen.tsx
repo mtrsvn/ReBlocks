@@ -22,6 +22,7 @@ import {
   Mic,
   ArrowUp,
   Clock,
+  UserPlus,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedButton } from "./AnimatedButton";
@@ -51,6 +52,8 @@ interface AITextMsg {
   role: "ai";
   type: "text";
   text: string;
+  actionType?: "add_contact";
+  actionPayload?: string;
 }
 
 interface AIConfirmMsg {
@@ -461,12 +464,14 @@ function MessageBubble({
   onCancel,
   onSendAgain,
   onHistory,
+  onStartAddContact,
 }: {
   message: ChatMessage;
   onConfirm: (id: string) => void;
   onCancel: (id: string) => void;
   onSendAgain: (txn: TxnData) => void;
   onHistory?: () => void;
+  onStartAddContact?: (name: string) => void;
 }) {
   const theme = useTheme();
 
@@ -544,6 +549,39 @@ function MessageBubble({
       </View>
       <View style={[styles.botBubble, { backgroundColor: theme.surface }]}>
         <FormattedText text={message.text} />
+        {message.type === "text" && message.actionType === "add_contact" && (
+          <AnimatedButton
+            onPress={() => onStartAddContact?.(message.actionPayload || "")}
+            style={{
+              marginTop: 12,
+              height: 44,
+              borderRadius: 14,
+              overflow: "hidden",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <LinearGradient
+              colors={["#10B981", "#059669"]}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <UserPlus size={15} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text
+                style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}
+              >
+                Add {message.actionPayload ? `@${message.actionPayload}` : "New Recipient"}
+              </Text>
+            </LinearGradient>
+          </AnimatedButton>
+        )}
       </View>
     </View>
   );
@@ -676,11 +714,10 @@ Respond ONLY with valid JSON.`;
           addAIMsg({
             role: "ai",
             type: "text",
-            text: `I couldn't find **"${intent.recipient || "that person"}"** in your saved recipients.\n\nOpening add contact so you can save it now.`,
+            text: `I couldn't find ${intent.recipient ? `"${intent.recipient}"` : "that contact"} in your list. Would you like to add them as a new recipient? 👤`,
+            actionType: "add_contact",
+            actionPayload: intent.recipient || "",
           });
-          if (onStartAddContact) {
-            onStartAddContact(intent.recipient || "");
-          }
           setIsTyping(false);
           return;
         }
@@ -914,6 +951,7 @@ Respond ONLY with valid JSON.`;
               onCancel={handleCancel}
               onSendAgain={handleSendAgain}
               onHistory={onHistory}
+              onStartAddContact={onStartAddContact}
             />
           ))}
 
