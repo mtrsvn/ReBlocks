@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Morph L2 Testnet Provider (Holesky)
-const provider = new ethers.JsonRpcProvider("https://rpc-quicknode-holesky.morphl2.io");
+const provider = new ethers.JsonRpcProvider("https://rpc-holesky.morphl2.io");
 
 // Pre-configured developer testing private key
 // WARNING: This is for testnet purposes ONLY. Do NOT use in production with real funds!
@@ -87,5 +87,5 @@ app.post("/api/chat", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Stateless Node.js bridge running on port ${PORT}`);
-  console.log(`Connected to Morph L2 Testnet RPC: https://rpc-quicknode-holesky.morphl2.io`);
+  console.log(`Connected to Morph L2 Testnet RPC: https://rpc-holesky.morphl2.io`);
 });
