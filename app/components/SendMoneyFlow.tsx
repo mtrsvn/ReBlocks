@@ -188,10 +188,11 @@ export function SendMoneyFlow({ onBack, preselectedRecipient, prefilledAmount, p
   const stepLabels = ["Recipient", "Amount", "Review", "Done"];
 
 
-const [l2Status, setL2Status] = useState("");
-const [showTxHash, setShowTxHash] = useState(false);
-const [showCopiedToast, setShowCopiedToast] = useState(false);
-const [txHash, setTxHash] = useState("");
+  const [l2Status, setL2Status] = useState("DISPATCHING");
+  const [showTxHash, setShowTxHash] = useState(false);
+  const [txHash, setTxHash] = useState("");
+  const [firebaseTxId, setFirebaseTxId] = useState("");
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
 useEffect(() => {
   if (step === 4) {
@@ -208,7 +209,7 @@ useEffect(() => {
     }, 3000);
 
     const timer3 = setTimeout(() => {
-      setL2Status("DELIVERED");
+      setL2Status("COMPLETED");
       setShowTxHash(true);
     }, 4500);
 
@@ -229,19 +230,23 @@ useEffect(() => {
           setShowMoonPay(false);
           setTxHash(hash);
           
-          addTransaction({
-            type: "send",
-            amount: totalToPay,
-            currency: defaultCurrency,
-            recipientAmount: receiveAmount,
-            recipientCurrency: sendCurrency,
-            recipientName: selectedRecipient?.name || newName,
-            fee: baseFee,
-            exchangeRate: sendCurrency === defaultCurrency ? 1 : ((defaultCurRate / exchangeRate) || 0),
-            fundingSourceId: primarySource.id,
-            estimatedArrival: "Instant",
-            txHash: hash,
-          });
+          const addTxAsync = async () => {
+            const newId = await addTransaction({
+              type: "send",
+              amount: totalToPay,
+              currency: defaultCurrency,
+              recipientAmount: receiveAmount,
+              recipientCurrency: sendCurrency,
+              recipientName: selectedRecipient?.name || newName,
+              fee: baseFee,
+              exchangeRate: sendCurrency === defaultCurrency ? 1 : ((defaultCurRate / exchangeRate) || 0),
+              fundingSourceId: primarySource?.id || "",
+              estimatedArrival: "Instant",
+              txHash: hash,
+            });
+            if (newId) setFirebaseTxId(newId);
+          };
+          addTxAsync();
 
           setStep(4);
         }}
@@ -705,16 +710,17 @@ useEffect(() => {
                 <Text style={styles.calcLabel}>Transaction ID</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Text style={[styles.calcMono, { color: theme.text }]}>
-                    REM-{Math.floor(Math.random() * 900000) + 100000}
+                    {firebaseTxId || "Pending..."}
                   </Text>
-                  <TouchableOpacity onPress={() => {
-                    const txId = `REM-${Math.floor(Math.random() * 900000) + 100000}`;
-                    Clipboard.setString(txId);
-                    setShowCopiedToast(true);
-                    setTimeout(() => setShowCopiedToast(false), 2000);
-                  }}>
-                    <Copy size={14} color="#10B981" />
-                  </TouchableOpacity>
+                  {firebaseTxId ? (
+                    <TouchableOpacity onPress={() => {
+                      Clipboard.setString(firebaseTxId);
+                      setShowCopiedToast(true);
+                      setTimeout(() => setShowCopiedToast(false), 2000);
+                    }}>
+                      <Copy size={14} color="#10B981" />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               </View>
 

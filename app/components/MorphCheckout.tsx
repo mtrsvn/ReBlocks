@@ -133,7 +133,7 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summarySubLabel}>Network Fee</Text>
-                <Text style={[styles.summarySubValue, { color: '#10B981' }]}>Free (Morph L2)</Text>
+                <Text style={[styles.summarySubValue, { color: '#10B981' }]}>~0.00001 ETH</Text>
               </View>
             </View>
 
@@ -315,8 +315,10 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
                     <Text style={[styles.receiptValue, { color: theme.text }]}>{new Date().toLocaleString()}</Text>
                   </View>
                   <View style={styles.receiptRow}>
-                    <Text style={styles.receiptLabel}>Order ID</Text>
-                    <Text style={[styles.receiptValue, { color: theme.text }]}>{mockOrderId}</Text>
+                    <Text style={styles.receiptLabel}>Transaction Hash</Text>
+                    <Text style={[styles.receiptValue, { color: theme.text }]} numberOfLines={1} ellipsizeMode="middle">
+                      {actualTxHash ? `${actualTxHash.slice(0, 8)}...${actualTxHash.slice(-6)}` : "Pending..."}
+                    </Text>
                   </View>
                   <View style={styles.receiptRow}>
                     <Text style={styles.receiptLabel}>Pay Amount</Text>

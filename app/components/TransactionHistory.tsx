@@ -286,12 +286,7 @@ export function TransactionHistory() {
                 </View>
               )}
 
-              <View style={[styles.detailRow, { borderColor: theme.border }]}>
-                <Text style={styles.detailLabel}>FEE</Text>
-                <Text style={[styles.detailVal, { color: theme.text }]}>
-                  {curSymbol}{formatAmount(selectedTransaction.fee, selectedTransaction.currency)}
-                </Text>
-              </View>
+
 
               <View style={[styles.detailRow, { borderColor: theme.border }]}>
                 <Text style={styles.detailLabel}>TRANSACTION ID</Text>

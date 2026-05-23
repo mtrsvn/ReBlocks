@@ -101,7 +101,7 @@ interface AppContextType {
   addRecipient: (recipient: Omit<Recipient, 'id'>) => Promise<void>;
   updateRecipient: (id: string, recipient: Partial<Recipient>) => Promise<void>;
   deleteRecipient: (id: string) => Promise<void>;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => Promise<void>;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => Promise<string | undefined>;
   addFundingSource: (source: Omit<FundingSource, 'id'>) => Promise<void>;
   deleteFundingSource: (id: string) => Promise<void>;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
@@ -327,13 +327,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) return undefined;
     const colRef = collection(db, "users", auth.currentUser.uid, "transactions");
-    await addDoc(colRef, {
+    const docRef = await addDoc(colRef, {
       ...transaction,
       date: new Date().toISOString(),
       status: 'completed'
     });
+    return docRef.id;
   };
 
   const updateUserProfile = async (profile: Partial<UserProfile>) => {
