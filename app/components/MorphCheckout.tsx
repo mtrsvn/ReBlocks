@@ -309,17 +309,9 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
                     <Text style={styles.receiptLabel}>Pay Amount</Text>
                     <Text style={[styles.receiptValue, { color: theme.text }]}>{amount.toFixed(2)} USD</Text>
                   </View>
-                  <View style={styles.receiptRow}>
+                  <View style={[styles.receiptRow, { borderBottomWidth: 0 }]}>
                     <Text style={styles.receiptLabel}>Network</Text>
                     <Text style={[styles.receiptValue, { color: theme.text }]}>Morph L2</Text>
-                  </View>
-                  <View style={styles.receiptRow}>
-                    <Text style={styles.receiptLabel}>To Address</Text>
-                    <Text style={[styles.receiptValue, { color: theme.text }]} numberOfLines={1}>0x80054640b987...b42da</Text>
-                  </View>
-                  <View style={[styles.receiptRow, { borderBottomWidth: 0 }]}>
-                    <Text style={styles.receiptLabel}>Transaction ID</Text>
-                    <Text style={[styles.receiptValue, { color: theme.text }]} numberOfLines={1}>{mockTxId.substring(0, 16)}...</Text>
                   </View>
                 </View>
 
