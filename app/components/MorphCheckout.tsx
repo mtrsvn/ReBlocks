@@ -88,10 +88,10 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
                   <Text style={styles.inputLabel}>Pay</Text>
                   <Text style={[styles.inputValue, { color: theme.text }]}>{amount.toFixed(2)}</Text>
                 </View>
-                <View style={[styles.currencyPill, { backgroundColor: theme.background }]}>
+                <View style={[styles.currencyPill, styles.currencyPillDisabled]}>
                   <View style={[styles.pillIcon, { backgroundColor: '#2563EB' }]}><Text style={styles.pillIconText}>$</Text></View>
-                  <Text style={[styles.pillText, { color: theme.text }]}>USD</Text>
-                  <ChevronDown size={16} color={theme.icon} />
+                  <Text style={[styles.pillText, styles.pillTextDisabled]}>USD</Text>
+                  <ChevronDown size={16} color="#c0c9d8" />
                 </View>
               </View>
             </View>
@@ -102,10 +102,10 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
                   <Text style={styles.inputLabel}>Receive (estimate)</Text>
                   <Text style={[styles.inputValue, { color: theme.text }]}>{receiveAmount.toFixed(4)}</Text>
                 </View>
-                <View style={[styles.currencyPill, { backgroundColor: theme.background }]}>
+                <View style={[styles.currencyPill, styles.currencyPillDisabled]}>
                   <View style={[styles.pillIcon, { backgroundColor: '#26A17B' }]}><Text style={styles.pillIconText}>T</Text></View>
-                  <Text style={[styles.pillText, { color: theme.text }]}>USDT</Text>
-                  <ChevronDown size={16} color={theme.icon} />
+                  <Text style={[styles.pillText, styles.pillTextDisabled]}>USDT</Text>
+                  <ChevronDown size={16} color="#c0c9d8" />
                 </View>
               </View>
             </View>
@@ -135,45 +135,38 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
 
       {step === 2 && (
         <View style={styles.container}>
-          {renderHeader("Select Payment Method")}
+          {renderHeader("Payment Method")}
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            {[
-              { id: 'card', name: 'Visa / Mastercard', icon: CreditCard, color: '#2563EB', rate: '0.9844' },
-              { id: 'google', name: 'Google Pay', icon: CreditCard, color: '#EA4335', rate: '0.9844' },
-              { id: 'apple', name: 'Apple Pay', icon: CreditCard, color: '#000000', rate: '0.9844' },
-            ].map((method) => (
-              <TouchableOpacity
-                key={method.id}
-                style={[styles.methodCard, { backgroundColor: theme.surface, borderColor: selectedMethod === method.id ? theme.primary : theme.border }]}
-                onPress={() => setSelectedMethod(method.id)}
-              >
-                <View style={styles.rowBetween}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <method.icon size={20} color={method.color} style={{ marginRight: 12 }} />
-                    <Text style={[styles.methodName, { color: theme.text }]}>{method.name}</Text>
-                  </View>
-                  {method.id === 'card' && (
-                    <View style={styles.addCardBadge}>
-                      <Text style={styles.addCardBadgeText}>Add card</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={[styles.rowBetween, { marginTop: 12 }]}>
-                  <View style={styles.instantBadge}>
-                    <Text style={styles.instantBadgeText}>Instant</Text>
-                  </View>
-                  <Text style={[styles.methodRate, { color: theme.text }]}>@ {method.rate} USD</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            
-            <TouchableOpacity 
-              activeOpacity={0.8}
-              disabled={!selectedMethod}
-              onPress={handleNext}
-              style={{ marginTop: 'auto' }}
+
+            <Text style={styles.methodSectionLabel}>Select how you'd like to pay</Text>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[styles.methodCard, styles.methodCardSelected, { backgroundColor: theme.surface, borderColor: '#10B981' }]}
+              onPress={() => setSelectedMethod('card')}
             >
-              <LinearGradient colors={selectedMethod ? ["#10B981", "#059669"] : ["#cbd5e1", "#94a3b8"]} style={styles.primaryBtn}>
+              <View style={styles.methodCardInner}>
+                <View style={[styles.methodIconBox, { backgroundColor: 'rgba(37, 99, 235, 0.1)' }]}>
+                  <CreditCard size={22} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.methodName, { color: theme.text }]}>Debit or Credit Card</Text>
+                  <View style={{ marginTop: 5, alignSelf: 'flex-start', backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, color: '#10B981', fontWeight: '700' }}>⚡ Instant</Text>
+                  </View>
+                </View>
+                <View style={[styles.methodRadio, { borderColor: '#10B981' }]}>
+                  <View style={styles.methodRadioDot} />
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => { setSelectedMethod('card'); handleNext(); }}
+              style={{ marginTop: 24 }}
+            >
+              <LinearGradient colors={["#10B981", "#059669"]} style={styles.primaryBtn}>
                 <Text style={styles.primaryBtnText}>Continue</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -186,10 +179,10 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
           {renderHeader("Add New Card")}
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <Text style={[styles.inputLabel, { marginTop: 8 }]}>Cardholder Name</Text>
-            <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="Full name on your card back" placeholderTextColor={theme.icon} />
+            <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="John Doe" placeholderTextColor={theme.icon} />
             
             <Text style={[styles.inputLabel, { marginTop: 16 }]}>Card Number</Text>
-            <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="Enter card number" placeholderTextColor={theme.icon} keyboardType="numeric" />
+            <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="1234 5678 9012 3456" placeholderTextColor={theme.icon} keyboardType="numeric" maxLength={19} />
             
             <View style={{ flexDirection: 'row', gap: 16, marginTop: 16 }}>
               <View style={{ flex: 1 }}>
@@ -197,8 +190,8 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
                 <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="MM/YY" placeholderTextColor={theme.icon} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>CVV / CVC</Text>
-                <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="CVV/CVC" placeholderTextColor={theme.icon} secureTextEntry />
+                <Text style={styles.inputLabel}>CVV</Text>
+                <TextInput style={[styles.textInput, { borderColor: theme.border, color: theme.text }]} placeholder="123" placeholderTextColor={theme.icon} secureTextEntry maxLength={4} keyboardType="numeric" />
               </View>
             </View>
 
@@ -258,25 +251,17 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
               <Text style={styles.confirmSub}>You will receive</Text>
             </View>
 
-            <View style={styles.networkBadge}>
-              <Text style={styles.networkBadgeTitle}>Morph L2 Network</Text>
-              <Text style={styles.networkBadgeAddress}>0x80054640b9872bc82e862f4037846387a31b42da</Text>
-            </View>
 
             <Text style={[styles.inputLabel, { marginTop: 24, marginBottom: 8 }]}>Pay with</Text>
-            <View style={[styles.methodCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <View style={styles.rowBetween}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <CreditCard size={20} color={selectedMethod === 'google' ? '#EA4335' : selectedMethod === 'apple' ? '#000' : '#2563EB'} style={{ marginRight: 12 }} />
-                  <Text style={[styles.methodName, { color: theme.text }]}>
-                    {selectedMethod === 'card' ? '--- 5890' : selectedMethod === 'google' ? 'Google Pay' : 'Apple Pay'}
-                  </Text>
+            <View style={[styles.methodCard, { backgroundColor: theme.surface, borderColor: theme.border, paddingVertical: 14 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[styles.methodIconBox, { backgroundColor: 'rgba(37, 99, 235, 0.1)', marginRight: 12 }]}>
+                  <CreditCard size={18} color="#2563EB" />
                 </View>
-                <ChevronRight size={20} color={theme.icon} />
-              </View>
-              <View style={{ flexDirection: 'row', marginTop: 12, gap: 8 }}>
-                <View style={styles.instantBadge}><Text style={styles.instantBadgeText}>Instant</Text></View>
-                <Text style={styles.gatewayFee}>Gateway Fee: 0%</Text>
+                <Text style={[styles.methodName, { color: theme.text, flex: 1 }]}>Debit or Credit Card</Text>
+                <View style={styles.instantBadge}>
+                  <Text style={styles.instantBadgeText}>⚡ Instant</Text>
+                </View>
               </View>
             </View>
 
@@ -372,9 +357,11 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   inputValue: { fontSize: 24, fontWeight: '700', flex: 1 },
   currencyPill: { flexDirection: 'row', alignItems: 'center', padding: 6, borderRadius: 20, paddingRight: 10 },
+  currencyPillDisabled: { backgroundColor: '#e8ecf0', borderWidth: 1, borderColor: '#d0d7e0' },
   pillIcon: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 6 },
   pillIconText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   pillText: { fontSize: 14, fontWeight: '600', marginRight: 4, transform: [{translateY: -1}] },
+  pillTextDisabled: { color: '#6b7a90' },
   
   summaryBox: { padding: 16, borderRadius: 12, marginTop: 24, marginBottom: 24 },
   summaryLabel: { fontSize: 13 },
@@ -386,13 +373,24 @@ const styles = StyleSheet.create({
   primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
   
   // Step 2
-  methodCard: { borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 12 },
-  methodName: { fontSize: 15, fontWeight: '600' },
-  addCardBadge: { backgroundColor: '#a3e635', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  addCardBadgeText: { fontSize: 10, fontWeight: '700', color: '#000' },
-  instantBadge: { backgroundColor: 'rgba(74, 222, 128, 0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  instantBadgeText: { fontSize: 10, color: '#4ade80', fontWeight: '600' },
-  methodRate: { fontSize: 12, fontWeight: '600' },
+  methodSectionLabel: { fontSize: 13, color: '#94a3b8', fontWeight: '600', marginBottom: 16, letterSpacing: 0.5 },
+  methodCard: { borderWidth: 1.5, borderRadius: 20, padding: 18, marginBottom: 12 },
+  methodCardSelected: { shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 4 },
+  methodCardInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  methodIconBox: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  methodName: { fontSize: 15, fontWeight: '700' },
+  methodSubtitle: { fontSize: 12, color: '#94a3b8', marginTop: 3 },
+  methodRadio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  methodRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981' },
+  methodDivider: { height: 1, marginVertical: 14 },
+  cardBrandsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardBrandChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
+  cardBrandDot: { width: 8, height: 8, borderRadius: 4 },
+  cardBrandText: { fontSize: 11, fontWeight: '700' },
+  secureNote: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 12 },
+  secureNoteText: { fontSize: 11, color: '#94a3b8', flex: 1 },
+  instantBadge: { marginLeft: 'auto', backgroundColor: 'rgba(74, 222, 128, 0.15)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  instantBadgeText: { fontSize: 11, color: '#10B981', fontWeight: '700' },
   
   // Step 3 & 4
   textInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, height: 52, marginTop: 8, fontSize: 15 },
