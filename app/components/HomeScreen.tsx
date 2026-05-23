@@ -464,7 +464,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
 
           <View style={{ gap: 10, marginTop: 12 }}>
             {transactions.length > 0 &&
-              transactions.slice(0, 3).map((tx) => (
+              transactions.slice(0, 4).map((tx) => (
                 <AnimatedButton
                   key={tx.id}
                   onPress={() => setSelectedTransaction(tx)}
