@@ -176,7 +176,7 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
 
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setSelectedMethod('card'); handleNext(); }}
+              onPress={() => { setSelectedMethod('card'); setStep(3); }}
               style={{ marginTop: 24 }}
             >
               <LinearGradient colors={["#10B981", "#059669"]} style={styles.primaryBtn}>
