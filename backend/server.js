@@ -35,11 +35,10 @@ app.post("/api/dispatch-tx", async (req, res) => {
       `Frontend authorization received. Dispatching transaction to ${toAddress} on Morph L2...`,
     );
 
-    // Send a real testnet transaction (0 ETH) just to generate a real transaction hash on the explorer
-    const tx = await wallet.sendTransaction({
-      to: toAddress,
-      value: 0,
-    });
+    // Send a real ERC-20 transfer using the Mock USDT contract
+    // We send a fixed amount (e.g. 10 USDT) for the mock, but you can pass it from the frontend
+    const amountToSend = ethers.parseUnits("10", 6); // 10 USDT (6 decimals)
+    const tx = await usdtContract.transfer(toAddress, amountToSend);
 
     console.log(`Transaction sent! Hash: ${tx.hash}`);
 
