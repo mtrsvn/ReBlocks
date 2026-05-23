@@ -656,7 +656,7 @@ Your job is to parse the user's message and return a JSON object containing:
 - "amount": (Optional) The amount as a number if the intent is 'send'.
 - "currency": (Optional) The currency code (e.g. PHP, USD) if the intent is 'send'.
 - "symbol": (Optional) The currency symbol (e.g. ₱, $) if the intent is 'send'.
-- "country": (Optional) The country name if the intent is 'rates'.
+- "base_currency": (REQUIRED if intent is 'rates') The 3-letter currency code the user is asking about (e.g. CNY for China, JPY for Japan, USD by default). ALWAYS include this for rates intent.
 
 Context about the user:
 - Current balances: ₱ 128,663.55 PHP, ₮ 2,241.50 USDT, $ 2,241.50 USD
@@ -778,41 +778,51 @@ Respond ONLY with valid JSON.`;
           text: textResponse,
         });
       } else if (intent.intent === "rates") {
-        if (intent.country) {
-          const c = COUNTRIES.find(
-            (c) => c.name.toLowerCase() === intent.country?.toLowerCase(),
-          );
-          if (c) {
-            const usdRate = exchangeRates["USD"] || 0.018;
-            const curRate = exchangeRates[c.currency] || 1;
-            const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
-            const textResponse = `${intent.text ? intent.text + "\n\n" : "Fetching the latest rates... 💱\n\n"}**Live Exchange Rate for ${c.name} (1 USD):**\n\n${c.flag} ${c.currency} → ${c.symbol}${formatFXRate(realRate)}\n\nGreat rate today! 📈`;
-            addAIMsg({
-              role: "ai",
-              type: "text",
-              text: textResponse,
-            });
-            setIsTyping(false);
-            return;
-          }
-        }
+        try {
+          const res = await fetch("https://open.er-api.com/v6/latest/USD");
+          const data = await res.json();
+          const ratesData = data?.rates || {};
 
-        const allRates = COUNTRIES.map((c) => {
-          const usdRate = exchangeRates["USD"] || 0.018;
-          const curRate = exchangeRates[c.currency] || 1;
-          const realRate = usdRate > 0 ? curRate / usdRate : c.rate;
-          return { ...c, rate: realRate };
-        });
-        let textResponse = `${intent.text ? intent.text + "\n\n" : "Fetching the latest rates... 💱\n\n"}**Live Exchange Rates (1 USD):**\n\n`;
-        allRates.forEach((r) => {
-          textResponse += `${r.flag} ${r.currency} → ${r.symbol}${formatFXRate(r.rate)}\n`;
-        });
-        textResponse += "\nGreat rates today! 📈";
-        addAIMsg({
-          role: "ai",
-          type: "text",
-          text: textResponse,
-        });
+          // Base currency: what the user asked about (e.g. CNY, JPY). Default: USD
+          const baseCur = (intent.base_currency || "USD").toUpperCase();
+          const baseRateFromUSD = ratesData[baseCur] || 1;
+
+          // Always show rates vs our default SEA country list
+          const targetList = COUNTRIES;
+
+          const headerLabel = baseCur === "USD"
+            ? "Live Exchange Rates (1 USD):"
+            : `Live Exchange Rates (1 ${baseCur}):`;
+
+          let textResponse = `${intent.text ? intent.text + "\n\n" : ""}**${headerLabel}**\n\n`;
+
+          targetList.forEach((c) => {
+            const rateFromUSD = ratesData[c.currency];
+            if (rateFromUSD !== undefined) {
+              const finalRate = rateFromUSD / baseRateFromUSD;
+              textResponse += `${c.flag} ${c.currency} → ${c.symbol}${formatFXRate(finalRate)}\n`;
+            }
+          });
+
+          textResponse += "\nGreat rates today! 📈";
+
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: textResponse,
+          });
+          setIsTyping(false);
+          return;
+        } catch (e) {
+          console.log("Failed to fetch rates", e);
+          addAIMsg({
+            role: "ai",
+            type: "text",
+            text: "Sorry, I couldn't fetch the latest rates right now. Please try again later! 😔",
+          });
+          setIsTyping(false);
+          return;
+        }
       } else if (intent.intent === "add_recipient") {
         if (!intent.text) {
           addAIMsg({

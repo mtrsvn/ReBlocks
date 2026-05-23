@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
+  Alert,
 } from "react-native";
 import { Bot } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -79,6 +80,20 @@ function AppContent() {
     sendDraft?: { amount?: number; currency?: string },
     addContactName?: string | null
   ) => {
+    if ((screen === "send" || screen === "ai-chat") && userProfile?.KYCVerified !== true) {
+      Alert.alert(
+        "Verification Required",
+        "Please verify your profile first to use this feature.",
+        [
+          { text: "OK", onPress: () => {
+            // Delay navigation slightly to allow alert to close on some devices
+            setTimeout(() => navigate("profile"), 100);
+          }}
+        ]
+      );
+      return;
+    }
+
     setPreselectedRecipient(recipient);
     setPrefilledSendAmount(sendDraft?.amount);
     setPrefilledSendCurrency(sendDraft?.currency);
