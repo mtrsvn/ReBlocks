@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, TextInput, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, TextInput, ScrollView, SafeAreaView, Platform } from 'react-native';
 import { useTheme } from '../context';
 import { ArrowLeft, CheckCircle2, ChevronDown, CreditCard, ChevronRight, Menu, Info, ShieldCheck, Wallet } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +23,7 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
   
   const [mockOrderId] = useState(Math.floor(100000000000 + Math.random() * 900000000000).toString());
   const [mockTxId] = useState("0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join(''));
+  const [actualTxHash, setActualTxHash] = useState("");
 
   // Status state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,7 +47,7 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
     if (step === 1) onBack();
     else if (step === 6) {
       if (isSuccess && onPaymentSuccess) {
-        onPaymentSuccess(mockTxId, receiveAmount);
+        onPaymentSuccess(actualTxHash || mockTxId, receiveAmount);
       } else {
         onBack();
       }
@@ -55,12 +56,24 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
     else setStep(step - 1);
   };
 
-  const startProcessing = () => {
+  const startProcessing = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      setIsSuccess(true);
-    }, 2500);
+    try {
+      const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/dispatch-tx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetAddress: "0x0000000000000000000000000000000000000000" })
+      });
+      const data = await response.json();
+      if (data.success && data.txHash) {
+        setActualTxHash(data.txHash);
+      }
+    } catch (e) {
+      console.error("Failed to fetch real transaction hash:", e);
+    }
+    setIsProcessing(false);
+    setIsSuccess(true);
   };
 
   const renderHeader = (title: string, showBack = true) => (

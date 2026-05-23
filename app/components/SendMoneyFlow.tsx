@@ -10,6 +10,7 @@ import {
   Platform,
   Dimensions,
   Clipboard,
+  Linking,
 } from "react-native";
 import {
   ArrowLeft,
@@ -27,6 +28,7 @@ import {
   X,
   Check,
   Copy,
+  ExternalLink,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -741,17 +743,36 @@ useEffect(() => {
                         <View style={styles.calcRow}>
               <Text style={styles.calcLabel}>Tx Hash</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={[styles.calcMono, { color: theme.primary }]}>
-                  {showTxHash ? (txHash ? `${txHash.substring(0, 6)}...${txHash.substring(txHash.length - 4)}` : "0x5f9a...8d2e") : "            "}
-                </Text>
-                {showTxHash && (
+                {showTxHash ? (
                   <TouchableOpacity onPress={() => {
-                    Clipboard.setString("0x5f9a...8d2e");
-                    setShowCopiedToast(true);
-                    setTimeout(() => setShowCopiedToast(false), 2000);
+                    const hashToOpen = txHash || "0x5f9a8d2e";
+                    Linking.openURL(`https://explorer-hoodi.morph.network/tx/${hashToOpen}`);
                   }}>
-                    <Copy size={14} color="#10B981" />
+                    <Text style={[styles.calcMono, { color: theme.primary, textDecorationLine: "underline" }]}>
+                      {txHash ? `${txHash.substring(0, 6)}...${txHash.substring(txHash.length - 4)}` : "0x5f9a...8d2e"}
+                    </Text>
                   </TouchableOpacity>
+                ) : (
+                  <Text style={[styles.calcMono, { color: theme.primary }]}>
+                    {"            "}
+                  </Text>
+                )}
+                {showTxHash && (
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <TouchableOpacity onPress={() => {
+                      Clipboard.setString(txHash || "0x5f9a8d2e");
+                      setShowCopiedToast(true);
+                      setTimeout(() => setShowCopiedToast(false), 2000);
+                    }}>
+                      <Copy size={14} color="#10B981" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => {
+                      const hashToOpen = txHash || "0x5f9a8d2e";
+                      Linking.openURL(`https://explorer-hoodi.morph.network/tx/${hashToOpen}`);
+                    }}>
+                      <ExternalLink size={14} color="#10B981" />
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             </View>
