@@ -476,9 +476,8 @@ export function AIChatScreen({ onBack, onStartSend, onStartAddContact, onHistory
     setIsTyping(true);
 
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-      const model = process.env.EXPO_PUBLIC_GEMINI_MODEL;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      // Proxy request through our local backend to keep API keys secure
+      const url = `http://localhost:5000/api/chat`;
 
       const systemPrompt = `You are a friendly, helpful Smart Assistant for a fintech wallet app called ReBlocks.
 The user is ${firstName}.
