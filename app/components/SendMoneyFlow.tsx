@@ -168,19 +168,6 @@ export function SendMoneyFlow({ onBack, preselectedRecipient, prefilledAmount, p
       }
     }
 
-      addTransaction({
-      type: "send",
-      amount: totalToPay,
-      currency: defaultCurrency,
-      recipientAmount: receiveAmount,
-      recipientCurrency: sendCurrency,
-      recipientName: recipient.name,
-      fee: baseFee,
-      exchangeRate: sendCurrency === defaultCurrency ? 1 : ((defaultCurRate / exchangeRate) || 0),
-      fundingSourceId: primarySource.id,
-      estimatedArrival: "Instant",
-    });
-    
     setShowMoonPay(true);
   };
   
@@ -241,6 +228,21 @@ useEffect(() => {
         onPaymentSuccess={(hash: string) => {
           setShowMoonPay(false);
           setTxHash(hash);
+          
+          addTransaction({
+            type: "send",
+            amount: totalToPay,
+            currency: defaultCurrency,
+            recipientAmount: receiveAmount,
+            recipientCurrency: sendCurrency,
+            recipientName: selectedRecipient?.name || newName,
+            fee: baseFee,
+            exchangeRate: sendCurrency === defaultCurrency ? 1 : ((defaultCurRate / exchangeRate) || 0),
+            fundingSourceId: primarySource.id,
+            estimatedArrival: "Instant",
+            txHash: hash,
+          });
+
           setStep(4);
         }}
       />

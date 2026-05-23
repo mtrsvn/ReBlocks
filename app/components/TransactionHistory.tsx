@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Clipboard,
+  Linking,
 } from "react-native";
 import {
   Search,
@@ -309,14 +310,26 @@ export function TransactionHistory() {
               <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.detailLabel}>TXHASH</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text style={[styles.detailMono, { color: theme.textSecondary }]}>0x71C7...3aF</Text>
-                  <TouchableOpacity onPress={() => {
-                    Clipboard.setString("0x71C7...3aF");
-                    setShowCopiedToast(true);
-                    setTimeout(() => setShowCopiedToast(false), 2000);
-                  }}>
-                    <Copy size={14} color="#10B981" />
-                  </TouchableOpacity>
+                  {selectedTransaction.txHash ? (
+                    <TouchableOpacity onPress={() => {
+                      Linking.openURL(`https://explorer-hoodi.morph.network/tx/${selectedTransaction.txHash}`);
+                    }}>
+                      <Text style={[styles.detailMono, { color: "#10B981", textDecorationLine: "underline" }]}>
+                        0x{selectedTransaction.txHash.replace("0x", "").slice(0, 4)}...{selectedTransaction.txHash.slice(-4)}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={[styles.detailMono, { color: theme.textSecondary }]}>Not available</Text>
+                  )}
+                  {selectedTransaction.txHash && (
+                    <TouchableOpacity onPress={() => {
+                      Clipboard.setString(selectedTransaction.txHash || "");
+                      setShowCopiedToast(true);
+                      setTimeout(() => setShowCopiedToast(false), 2000);
+                    }}>
+                      <Copy size={14} color="#10B981" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>

@@ -59,7 +59,7 @@ export function MorphCheckoutMock({ amount, onBack, onPaymentSuccess }: MorphChe
   const startProcessing = async () => {
     setIsProcessing(true);
     try {
-      const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+      const baseUrl = 'https://reblocks.onrender.com';
       const response = await fetch(`${baseUrl}/api/dispatch-tx`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

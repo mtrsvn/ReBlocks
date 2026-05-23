@@ -53,6 +53,7 @@ export interface Transaction {
   exchangeRate?: number;
   fundingSourceId?: string;
   estimatedArrival?: string;
+  txHash?: string;
 }
 
 export interface UserProfile {
