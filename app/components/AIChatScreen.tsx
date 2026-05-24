@@ -675,7 +675,7 @@ Respond ONLY with valid JSON.`;
           },
           contents: [
             ...messages
-              .filter((m) => m.type === "text" || m.role === "user")
+              .filter((m): m is UserMsg | AITextMsg => m.role === "user" || (m.role === "ai" && m.type === "text"))
               .map((m) => ({
                 role: m.role === "ai" ? "model" : "user",
                 parts: [{ text: m.text }],
