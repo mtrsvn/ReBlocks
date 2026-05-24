@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Delete, ScanFace } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -290,9 +291,47 @@ export function PinEntryScreen({ onUnlock, onLogout, forRemoval = false }: PinEn
 
         <View style={styles.keypadSection}>{renderKeypad()}</View>
 
-        <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>{forRemoval ? "Cancel" : "Log out instead"}</Text>
-        </TouchableOpacity>
+        <View style={{ alignItems: "center", paddingVertical: 10 }}>
+          {!forRemoval && (
+            <TouchableOpacity 
+              onPress={() => {
+                Alert.alert(
+                  "Forgot PIN?",
+                  "To reset your PIN, you will be securely logged out. You can set a new PIN after logging back in.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { 
+                      text: "Log out & Reset", 
+                      style: "destructive", 
+                      onPress: async () => {
+                        try {
+                          await updateUserProfile({ 
+                            pin: false,
+                            userPin: null, 
+                            biometricEnabled: false, 
+                            pinAttempt: 0, 
+                            isLocked: false, 
+                            lockedUntil: null 
+                          });
+                        } catch (e) {
+                          console.log("Failed to clear PIN", e);
+                        } finally {
+                          onLogout();
+                        }
+                      } 
+                    }
+                  ]
+                );
+              }} 
+              style={{ marginBottom: 16 }}
+            >
+              <Text style={[styles.logoutText, { color: "#10B981" }]}>Forgot PIN?</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>{forRemoval ? "Cancel" : "Log out instead"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );

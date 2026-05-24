@@ -65,7 +65,7 @@ function AppContent() {
       setPinUnlocked(false);
       setTwoFactorUnlocked(false);
     } else {
-      if (!userProfile.pin) {
+      if (!userProfile.userPin) {
         setPinUnlocked(true);
       }
       if (!userProfile.twoFactorEnabled) {
@@ -174,7 +174,7 @@ function AppContent() {
     );
   }
 
-  if ((userProfile.pin || userProfile.biometricEnabled) && !pinUnlocked) {
+  if ((userProfile.userPin || userProfile.biometricEnabled) && !pinUnlocked) {
     return (
       <View style={[styles.appContainer, { backgroundColor: theme.background }]}>
         <StatusBar style={darkMode ? "light" : "dark"} />
