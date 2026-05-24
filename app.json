@@ -30,12 +30,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "e45d9ce0-8089-487e-9b6f-842b6cb65bcc"
-      }
-    },
-    "owner": "matersvendev"
+    }
   }
 }
