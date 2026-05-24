@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Linking,
 } from "react-native";
 import {
   ArrowLeft,
@@ -413,8 +414,15 @@ function ConfirmationCard({
                 Transaction Completed!
               </Text>
               <Text style={[styles.txnIdText, { color: theme.textSecondary }]}>
-                ID: {txnId}
+                Hash: {txnId?.substring(0, 10)}...{txnId?.substring(txnId.length - 8)}
               </Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => Linking.openURL(`https://explorer-hoodi.morph.network/tx/${txnId}`)}
+                style={{ marginTop: 4, marginBottom: 8 }}
+              >
+                <Text style={{ color: "#10B981", fontSize: 12, textDecorationLine: "underline" }}>View on Explorer</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => onSendAgain(txn)}
@@ -645,6 +653,24 @@ export function AIChatScreen({
     setIsTyping(true);
 
     try {
+      let currentGasFee = "0.0001 ETH";
+      try {
+        const rpcRes = await fetch("https://rpc-hoodi.morph.network", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", method: "eth_gasPrice", params: [], id: 1 })
+        });
+        const rpcData = await rpcRes.json();
+        if (rpcData.result) {
+          const wei = parseInt(rpcData.result, 16);
+          const eth = wei / 1e18;
+          const estimatedFee = (eth * 65000).toFixed(6); // 65000 gas limit for ERC20
+          currentGasFee = `${estimatedFee} ETH`;
+        }
+      } catch (e) {
+        console.log("Failed to fetch gas fee", e);
+      }
+
       const url = `https://reblocks.onrender.com/api/chat`;
 
       const systemPrompt = `You are a friendly, helpful Smart Assistant for a fintech wallet app called ReBlocks.
@@ -663,6 +689,8 @@ Your job is to parse the user's message and return a JSON object containing:
 Context about the user:
 - Current balances: ₱ 128,663.55 PHP, ₮ 2,241.50 USDT, $ 2,241.50 USD
 - Saved recipients: ${recipients.map((r: any) => r.name).join(", ")}
+- Recent History: ${transactions.slice(0, 5).map((t: any) => `Sent ${t.amount} ${t.currency} to ${t.recipientName} (TxHash: ${t.txHash || t.id})`).join(" | ")}
+- Live Morph Network Fee: ${currentGasFee} (Inform the user of this fee when they send money, if relevant)
 
 Respond ONLY with valid JSON.`;
 
@@ -891,8 +919,8 @@ Respond ONLY with valid JSON.`;
       ),
     );
     setTimeout(() => {
-      const txnId =
-        "TXN-" + Math.random().toString(16).slice(2, 10).toUpperCase();
+      const mockHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+      const txnId = mockHash;
       setMessages((prev) =>
         prev.map((m) =>
           m.id === msgId && m.role === "ai" && m.type === "confirmation"
