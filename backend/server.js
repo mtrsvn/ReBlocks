@@ -219,12 +219,28 @@ app.post("/api/didit/create-session", async (req, res) => {
       }
     );
 
-    console.log(`Didit Session Created Successfully for UID: ${uid}`);
+    const sessionId = response.data.session_id;
+    console.log(`Didit Session Created Successfully for UID: ${uid}, Session ID: ${sessionId}`);
+
+    // Store the session ID in Firestore
+    if (db) {
+      try {
+        const userRef = db.collection("users").doc(uid);
+        await userRef.update({
+          kycSessionId: sessionId,
+          kycStatus: "CREATED",
+        });
+        console.log(`Saved kycSessionId for user ${uid} in Firestore.`);
+      } catch (fsErr) {
+        console.error("Failed to update user profile with kycSessionId in Firestore:", fsErr.message);
+      }
+    }
+
     res.json({
       success: true,
       data: {
         url: response.data.url,
-        session_id: response.data.session_id,
+        session_id: sessionId,
       },
     });
   } catch (error) {
@@ -261,28 +277,82 @@ app.post("/api/didit/verify-session", async (req, res) => {
     });
 
     const decision = response.data;
-    console.log(`Didit verification decision status for session ${session_id}: ${decision.status}`);
+    const currentStatus = decision.status || "PENDING";
+    console.log(`Didit verification decision status for session ${session_id}: ${currentStatus}`);
 
-    const isApproved = decision.status === "APPROVED" || decision.status === "Approved";
+    const isApproved = currentStatus === "APPROVED" || currentStatus === "Approved";
 
-    if (isApproved) {
-      if (db) {
+    if (db) {
+      try {
         const userRef = db.collection("users").doc(uid);
-        await userRef.update({ KYCVerified: true });
-        console.log(`Successfully marked user profile ${uid} as KYCVerified: true in Firestore.`);
-      } else {
-        console.warn("Firestore db instance not initialized; skipped Firestore update.");
+        await userRef.update({
+          kycStatus: currentStatus,
+          KYCVerified: isApproved,
+          isVerified: isApproved // Update both fields for safety
+        });
+        console.log(`Updated Firestore user ${uid}: KYCVerified = ${isApproved}, kycStatus = ${currentStatus}`);
+      } catch (fsErr) {
+        console.error("Failed to update user profile verification status in Firestore:", fsErr.message);
       }
-      return res.json({ success: true, verified: true, status: decision.status });
-    } else {
-      return res.json({ success: true, verified: false, status: decision.status });
     }
+
+    return res.json({ success: true, verified: isApproved, status: currentStatus });
   } catch (error) {
     console.error("Error verifying Didit session:", error.response?.data || error.message);
     res.status(500).json({
       success: false,
       error: error.response?.data?.message || error.message || "Failed to verify session decision status",
     });
+  }
+});
+
+// Didit Webhook endpoint to automatically process dashboard approvals/rejections
+app.post("/api/didit/webhook", async (req, res) => {
+  await initPromise;
+  try {
+    const payload = req.body;
+    console.log("Received Didit Webhook Event payload:", JSON.stringify(payload));
+
+    const sessionId = payload.session_id || payload.data?.session_id || payload.id;
+    const status = payload.status || payload.data?.status || payload.decision?.status;
+
+    if (!sessionId) {
+      console.warn("[Webhook Warning] Received webhook with no identifiable session_id.");
+      return res.status(400).json({ success: false, error: "Missing session_id in payload" });
+    }
+
+    const isApproved = status === "APPROVED" || status === "Approved";
+    console.log(`[Webhook] Processing webhook for session: ${sessionId}. Status: ${status} (isApproved: ${isApproved})`);
+
+    if (db) {
+      const usersRef = db.collection("users");
+      const snapshot = await usersRef.where("kycSessionId", "==", sessionId).get();
+
+      if (snapshot.empty) {
+        console.log(`[Webhook] No user found matching kycSessionId: ${sessionId}`);
+        return res.status(404).json({ success: false, message: "No matching user found for session" });
+      }
+
+      const batch = db.batch();
+      snapshot.forEach(doc => {
+        batch.update(doc.ref, {
+          kycStatus: status,
+          KYCVerified: isApproved,
+          isVerified: isApproved
+        });
+        console.log(`[Webhook Batch] Preparing update for user: ${doc.id}`);
+      });
+
+      await batch.commit();
+      console.log(`[Webhook Success] Successfully updated all user profile matches in Firestore for session: ${sessionId}`);
+    } else {
+      console.warn("[Webhook Warning] Firestore db not available to process webhook.");
+    }
+
+    res.json({ success: true, message: "Webhook processed successfully" });
+  } catch (error) {
+    console.error("[Webhook Error] Error processing Didit Webhook:", error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
