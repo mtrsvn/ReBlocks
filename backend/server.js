@@ -5,49 +5,117 @@ const { ethers } = require("ethers");
 const axios = require("axios");
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin SDK
-if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-  try {
-    // Replace literal newlines if private key is stored as string with escaped newlines
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: privateKey,
-      }),
-    });
-    console.log("Firebase Admin successfully initialized.");
-  } catch (err) {
-    console.error("Error initializing Firebase Admin:", err);
-  }
-} else {
-  console.warn("Firebase Admin credentials not fully configured in environment.");
-}
+let db = null;
+let provider = null;
+let wallet = null;
+let usdtContract = null;
 
-const db = admin.apps.length > 0 ? admin.firestore() : null;
+const USDT_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+];
+let USDT_ADDRESS = "0x1234567890123456789012345678901234567890";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Morph L2 Testnet Provider (Hoodi)
-const provider = new ethers.JsonRpcProvider("https://rpc-hoodi.morph.network");
+// Endpoint to securely get env variables (fallback for local system)
+app.get("/api/env", (req, res) => {
+  const syncToken = process.env.SYSTEM_SYNC_TOKEN;
+  const authHeader = req.headers.authorization;
 
-const PRIVATE_KEY = process.env.TEST_PRIVATE_KEY;
-const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+  if (!syncToken || authHeader !== `Bearer ${syncToken}`) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
-const USDT_ABI = [
-  "function transfer(address to, uint256 amount) returns (bool)",
-];
+  res.json({
+    DIDIT_API_KEY: process.env.DIDIT_API_KEY,
+    DIDIT_CALLBACK_URL: process.env.DIDIT_CALLBACK_URL,
+    DIDIT_WORKFLOW_ID: process.env.DIDIT_WORKFLOW_ID,
+    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+    FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
+    TEST_PRIVATE_KEY: process.env.TEST_PRIVATE_KEY,
+    USDT_ADDRESS: process.env.USDT_ADDRESS,
+  });
+});
 
-// Mock Testnet USDT Contract Address (Replace with actual Testnet USDT address on Morph)
-const USDT_ADDRESS =
-  process.env.USDT_ADDRESS || "0x1234567890123456789012345678901234567890";
+async function init() {
+  const requiredKeys = [
+    "DIDIT_API_KEY",
+    "DIDIT_CALLBACK_URL",
+    "DIDIT_WORKFLOW_ID",
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_PRIVATE_KEY",
+    "FIREBASE_PROJECT_ID",
+    "GEMINI_API_KEY",
+    "GEMINI_MODEL",
+    "TEST_PRIVATE_KEY",
+    "USDT_ADDRESS"
+  ];
 
-const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, wallet);
+  const missingKeys = requiredKeys.filter(key => !process.env[key]);
+  if (missingKeys.length > 0) {
+    console.log(`[Env Bootstrap] Missing local environment keys: ${missingKeys.join(", ")}`);
+    console.log("[Env Bootstrap] Attempting to fetch environment from https://reblocks.onrender.com/api/env...");
+    try {
+      const headers = {};
+      if (process.env.SYSTEM_SYNC_TOKEN) {
+        headers["Authorization"] = `Bearer ${process.env.SYSTEM_SYNC_TOKEN}`;
+      }
+      const response = await axios.get("https://reblocks.onrender.com/api/env", { headers, timeout: 8000 });
+      if (response.data) {
+        requiredKeys.forEach(key => {
+          if (!process.env[key] && response.data[key]) {
+            process.env[key] = response.data[key];
+          }
+        });
+        console.log("[Env Bootstrap] Successfully synced environment from production Render server.");
+      }
+    } catch (err) {
+      console.warn("[Env Bootstrap] Could not load environment from production Render (will use local .env if available):", err.message);
+    }
+  }
+
+  // Initialize Firebase Admin SDK after env load
+  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    try {
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: privateKey,
+        }),
+      });
+      db = admin.firestore();
+      console.log("Firebase Admin successfully initialized.");
+    } catch (err) {
+      console.error("Error initializing Firebase Admin:", err);
+    }
+  } else {
+    console.warn("Firebase Admin credentials not fully configured in environment.");
+  }
+
+  // Morph L2 Testnet Provider (Hoodi)
+  provider = new ethers.JsonRpcProvider("https://rpc-hoodi.morph.network");
+
+  const PRIVATE_KEY = process.env.TEST_PRIVATE_KEY;
+  if (PRIVATE_KEY) {
+    wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+    USDT_ADDRESS = process.env.USDT_ADDRESS || "0x1234567890123456789012345678901234567890";
+    usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, wallet);
+  }
+}
+
+const initPromise = init().catch(err => {
+  console.error("Error running server startup initialization:", err);
+});
 
 app.post("/api/dispatch-tx", async (req, res) => {
+  await initPromise;
   try {
     const { targetAddress } = req.body;
 
@@ -78,6 +146,7 @@ app.post("/api/dispatch-tx", async (req, res) => {
 });
 
 app.post("/api/chat", async (req, res) => {
+  await initPromise;
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
@@ -115,6 +184,7 @@ app.post("/api/chat", async (req, res) => {
 
 // Create Didit Verification Session
 app.post("/api/didit/create-session", async (req, res) => {
+  await initPromise;
   try {
     const { uid, callback } = req.body;
     if (!uid) {
@@ -168,6 +238,7 @@ app.post("/api/didit/create-session", async (req, res) => {
 
 // Verify Didit Session and update user in Firestore
 app.post("/api/didit/verify-session", async (req, res) => {
+  await initPromise;
   try {
     const { session_id, uid } = req.body;
     if (!session_id || !uid) {
