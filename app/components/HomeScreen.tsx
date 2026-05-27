@@ -82,6 +82,7 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     exchangeRates,
     userProfile,
     darkMode,
+    recipients,
   } = useApp();
   const theme = useTheme();
 
@@ -627,14 +628,25 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
                 </View>
               )}
 
-              {selectedTransaction.exchangeRate && (
-                <View style={[styles.detailRow, { borderColor: theme.border }]}>
-                  <Text style={styles.detailLabel}>EXCHANGE RATE</Text>
-                  <Text style={[styles.detailVal, { color: theme.text }]}>
-                    1 {selectedTransaction.currency || "PHP"} = {selectedTransaction.recipientCurrency === selectedTransaction.currency ? "1.00" : (selectedTransaction.recipientCurrency === "PHP" ? (1 / (selectedTransaction.exchangeRate || 1)) : (selectedTransaction.exchangeRate || 1)).toFixed(2)} {selectedTransaction.recipientCurrency}
-                  </Text>
-                </View>
-              )}
+              {selectedTransaction.exchangeRate && (() => {
+                const recipientObj = recipients.find(r => r.name === selectedTransaction.recipientName);
+                let localCurrency = selectedTransaction.recipientCurrency || "PHP";
+                if (recipientObj) {
+                  localCurrency = recipientObj.currency;
+                }
+                if (localCurrency === "USD" || localCurrency === "USDT") {
+                  localCurrency = "PHP";
+                }
+                const rateVal = ((exchangeRates[localCurrency] || 1) / (exchangeRates["USD"] || 0.018)).toFixed(localCurrency === "VND" ? 0 : 2);
+                return (
+                  <View style={[styles.detailRow, { borderColor: theme.border }]}>
+                    <Text style={styles.detailLabel}>EXCHANGE RATE</Text>
+                    <Text style={[styles.detailVal, { color: theme.text }]}>
+                      1 USD = {rateVal} {localCurrency}
+                    </Text>
+                  </View>
+                );
+              })()}
 
 
 
