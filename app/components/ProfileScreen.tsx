@@ -1249,12 +1249,25 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                         body: JSON.stringify({ uid, callback: redirectUrl })
                       });
                       
+                      if (!response.ok) {
+                        throw new Error(`Server returned status ${response.status}`);
+                      }
+
+                      const contentType = response.headers.get("content-type");
+                      if (!contentType || !contentType.includes("application/json")) {
+                        throw new Error("Invalid response from server. Make sure the backend has the /api/didit/create-session endpoint deployed.");
+                      }
+
                       const result = await response.json();
                       
                       if (result.success && result.data && result.data.url) {
                         setKycLoading(false); // Stop loading before opening browser
                         // Use openAuthSessionAsync to safely intercept the redirect URL and auto-close
-                        await WebBrowser.openAuthSessionAsync(result.data.url, redirectUrl);
+                        const authResult = await WebBrowser.openAuthSessionAsync(result.data.url, redirectUrl);
+                        if (authResult.type === 'success') {
+                          await updateUserProfile({ KYCVerified: true });
+                          Alert.alert("Verification Success", "Your identity has been verified successfully!");
+                        }
                         setShowKycModal(false); // Close modal only after browser returns
                       } else {
                         throw new Error(result.error || "Failed to create verification session");
