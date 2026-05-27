@@ -112,8 +112,8 @@ export function BuyCryptoMock({ onBack, onPaymentSuccess }: BuyCryptoMockProps) 
                   <Text style={[styles.inputValue, { color: theme.text }]}>{receiveAmount.toFixed(4)}</Text>
                 </View>
                 <View style={[styles.currencyPill, { backgroundColor: theme.background }]}>
-                  <View style={[styles.pillIcon, { backgroundColor: '#26A17B' }]}><Text style={styles.pillIconText}>T</Text></View>
-                  <Text style={[styles.pillText, { color: theme.text }]}>USDT</Text>
+                  <View style={[styles.pillIcon, { backgroundColor: '#2775CA' }]}><Text style={styles.pillIconText}>C</Text></View>
+                  <Text style={[styles.pillText, { color: theme.text }]}>USDC</Text>
                   <ChevronDown size={16} color={theme.icon} />
                 </View>
               </View>
@@ -121,10 +121,10 @@ export function BuyCryptoMock({ onBack, onPaymentSuccess }: BuyCryptoMockProps) 
 
             <View style={[styles.summaryBox, { backgroundColor: theme.surface }]}>
               <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>
-                You will get <Text style={{fontWeight: '700', color: theme.text}}>{receiveAmount.toFixed(4)} USDT</Text> for <Text style={{fontWeight: '700', color: theme.text}}>{amount.toFixed(2)} USD</Text>
+                You will get <Text style={{fontWeight: '700', color: theme.text}}>{receiveAmount.toFixed(4)} USDC</Text> for <Text style={{fontWeight: '700', color: theme.text}}>{amount.toFixed(2)} USD</Text>
               </Text>
               <View style={[styles.summaryRow, { marginTop: 16 }]}>
-                <Text style={styles.summarySubLabel}>{receiveAmount.toFixed(4)} USDT (@ {(amount > 0 && receiveAmount > 0) ? (amount/receiveAmount).toFixed(4) : "-"} USD)</Text>
+                <Text style={styles.summarySubLabel}>{receiveAmount.toFixed(4)} USDC (@ {(amount > 0 && receiveAmount > 0) ? (amount/receiveAmount).toFixed(4) : "-"} USD)</Text>
                 <Text style={[styles.summarySubValue, { color: theme.text }]}>{amount.toFixed(2)} USD</Text>
               </View>
               <View style={styles.summaryRow}>
@@ -267,7 +267,7 @@ export function BuyCryptoMock({ onBack, onPaymentSuccess }: BuyCryptoMockProps) 
           <ScrollView contentContainerStyle={styles.scrollContent}>
             
             <View style={styles.centerAlign}>
-              <Text style={[styles.bigConfirmAmount, { color: theme.text }]}>≈{receiveAmount.toFixed(4)} <Text style={{fontSize: 16, color: '#94a3b8'}}>USDT</Text></Text>
+              <Text style={[styles.bigConfirmAmount, { color: theme.text }]}>≈{receiveAmount.toFixed(4)} <Text style={{fontSize: 16, color: '#94a3b8'}}>USDC</Text></Text>
               <Text style={styles.confirmSub}>You will receive</Text>
             </View>
 
@@ -322,7 +322,7 @@ export function BuyCryptoMock({ onBack, onPaymentSuccess }: BuyCryptoMockProps) 
                 <CheckCircle2 size={64} color="#4ade80" />
               </View>
                 <Text style={[styles.successTitle, { color: theme.text }]}>Payment Successful</Text>
-                <Text style={[styles.successAmount, { color: theme.text }]}>{receiveAmount.toFixed(4)} <Text style={{fontSize: 16, color: '#94a3b8'}}>USDT</Text></Text>
+                <Text style={[styles.successAmount, { color: theme.text }]}>{receiveAmount.toFixed(4)} <Text style={{fontSize: 16, color: '#94a3b8'}}>USDC</Text></Text>
 
                 <View style={[styles.receiptBox, { borderColor: theme.border }]}>
                   <View style={styles.receiptRow}>

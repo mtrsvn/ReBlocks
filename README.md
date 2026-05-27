@@ -12,8 +12,7 @@ By making blockchain invisible to the end user, ReBlocks delivers a seamless rem
 
 ## 🔗 Live Links & Interactive Demos
 
-🌐 **Landing Page:** https://reblocksdemo.vercel.app/
-📱 **Interactive Emulator:** https://appetize.io/app/b_wopxyn4juesahuodtxhoxvlb4m
+[🌐 **Landing Page**](https://reblocksdemo.vercel.app/) &nbsp;&nbsp;•&nbsp;&nbsp; [📱 **Interactive Emulator**](https://appetize.io/app/b_wopxyn4juesahuodtxhoxvlb4m)
 
 ---
 
