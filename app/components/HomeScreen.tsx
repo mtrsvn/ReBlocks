@@ -230,6 +230,16 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     };
   });
 
+  const kycNotification = userProfile?.KYCVerified ? {
+    id: `kyc-verified-${userProfile.uid || 'user'}`,
+    title: "Identity Verified",
+    body: "Congratulations! Your identity verification (KYC) is complete. You now have full access to high-speed, secure payments.",
+    time: "Completed",
+    icon: UserCheck,
+    color: "#10B981",
+    bg: "#d1fae5",
+  } : null;
+
   const rateNotification = {
     id: rateNotifId,
     title: "Exchange Rate Update",
@@ -240,14 +250,17 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
     bg: "#d1fae5",
   };
 
-  const notifications = [...transferNotifications, rateNotification];
+  const notifications = [
+    ...(kycNotification ? [kycNotification] : []),
+    ...transferNotifications,
+    rateNotification
+  ];
 
   const markAllNotificationsRead = () => {
     markNotificationsRead((prev) => [
       ...new Set([
         ...prev,
-        ...transferNotifications.map((n) => n.id),
-        rateNotifId,
+        ...notifications.map((n) => n.id),
       ]),
     ]);
   };
@@ -307,9 +320,12 @@ export function HomeScreen({ onSendMoney, onHistory, onBeneficiaries }: HomeScre
       gradient: "",
     };
 
-  // Badge only reflects unread transfers — daily rate update stays in inbox but isn't a "new" alert
+  // Badge only reflects unread transfers and KYC verification — daily rate update stays in inbox but isn't a "new" alert
   const unreadCount = readIdsLoaded
-    ? transferNotifications.filter((n) => n.id && !readIds.includes(n.id)).length
+    ? [
+        ...transferNotifications,
+        ...(kycNotification ? [kycNotification] : [])
+      ].filter((n) => n.id && !readIds.includes(n.id)).length
     : 0;
 
   
