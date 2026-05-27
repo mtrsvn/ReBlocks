@@ -311,7 +311,7 @@ app.post("/api/didit/webhook", async (req, res) => {
   await initPromise;
   try {
     const payload = req.body;
-    console.log("Received Didit Webhook Event payload:", JSON.stringify(payload));
+    console.log(`Received Didit Webhook Event for App: ${payload.application_id || "unknown"}`);
 
     // Try multiple nested paths to find the Session ID
     const sessionId = payload.session_id 
