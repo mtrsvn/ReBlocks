@@ -33,7 +33,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { AnimatedButton } from "./AnimatedButton";
-import { useApp, Recipient, useTheme } from "../context";
+import { useApp, Recipient, useTheme, CURRENCY_SYMBOLS } from "../context";
 import { getCountryFlag } from "../utils/countries";
 import { MorphCheckoutMock } from "./MorphCheckout";
 
@@ -86,7 +86,7 @@ export function SendMoneyFlow({ onBack, preselectedRecipient, prefilledAmount, p
   
   const [sendAmount, setSendAmount] = useState(prefilledAmount !== undefined ? String(prefilledAmount) : "");
   const [sendCurrency, setSendCurrency] = useState(
-    prefilledCurrency || (preselectedRecipient ? preselectedRecipient.currency : (defaultCurrency === "USD" ? "USD" : "PHP"))
+    prefilledCurrency || (preselectedRecipient ? preselectedRecipient.currency : defaultCurrency)
   );
 
   useEffect(() => {
@@ -101,14 +101,14 @@ export function SendMoneyFlow({ onBack, preselectedRecipient, prefilledAmount, p
     }
   }, [prefilledCurrency]);
 
-  const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
+  const curSymbol = CURRENCY_SYMBOLS[defaultCurrency] || defaultCurrency;
   const baseFee = 0;
 
   const exchangeRate = exchangeRates[sendCurrency] || 1;
-  const defaultCurRate = exchangeRates[defaultCurrency] || (defaultCurrency === "USD" ? 0.018 : 1);
+  const defaultCurRate = exchangeRates[defaultCurrency] || 1;
   const receiveAmount = parseFloat(sendAmount) || 0;
   const targetCurrency = selectedRecipient ? selectedRecipient.currency : newCountry.currency;
-  const finalRecipientAmount = sendCurrency === "USD" && targetCurrency !== "USD" ? receiveAmount * (exchangeRates[targetCurrency] / exchangeRates["USD"]) : receiveAmount;
+  const finalRecipientAmount = sendCurrency === targetCurrency ? receiveAmount : (receiveAmount / (exchangeRates[sendCurrency] || 1)) * (exchangeRates[targetCurrency] || 1);
 
   const phpValue = sendCurrency === "PHP" ? receiveAmount : (exchangeRate !== 0 ? receiveAmount / exchangeRate : 0);
   const baseEquivalent = phpValue * defaultCurRate;
@@ -507,21 +507,21 @@ useEffect(() => {
                 <Text style={[styles.inputCardLabel, { marginBottom: 0 }]}>Amount to Send ({sendCurrency})</Text>
                 <AnimatedButton
                   onPress={() => {
-                    const usdToTargetRate = exchangeRates[targetCurrency] / (exchangeRates["USD"] || 0.018);
-                    if (sendCurrency === "USD") {
-                      const newAmount = receiveAmount * usdToTargetRate;
+                    const defaultToTargetRate = (exchangeRates[targetCurrency] || 1) / (exchangeRates[defaultCurrency] || 1);
+                    if (sendCurrency === defaultCurrency) {
+                      const newAmount = receiveAmount * defaultToTargetRate;
                       setSendAmount(newAmount > 0 ? newAmount.toFixed(targetCurrency === "VND" ? 0 : 2) : "");
                       setSendCurrency(targetCurrency);
                     } else {
-                      const newAmount = receiveAmount / usdToTargetRate;
+                      const newAmount = receiveAmount / defaultToTargetRate;
                       setSendAmount(newAmount > 0 ? newAmount.toFixed(2) : "");
-                      setSendCurrency("USD");
+                      setSendCurrency(defaultCurrency);
                     }
                   }}
                   style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}
                 >
                   <Text style={{ fontSize: 10, fontWeight: "800", color: "#10B981" }}>
-                    SWITCH TO {sendCurrency === "USD" ? targetCurrency : "USD"}
+                    SWITCH TO {sendCurrency === defaultCurrency ? targetCurrency : defaultCurrency}
                   </Text>
                 </AnimatedButton>
               </View>
@@ -547,8 +547,8 @@ useEffect(() => {
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
                 </View>
                 <Text style={[styles.calcVal, { color: theme.text }]}>
-                  {sendCurrency === "USD" && targetCurrency !== "USD" ? (
-                    `1 USD = ${(exchangeRates[targetCurrency] / exchangeRates["USD"]).toLocaleString(undefined, { maximumFractionDigits: targetCurrency === "VND" ? 0 : 4 })} ${targetCurrency}`
+                  {sendCurrency === defaultCurrency && targetCurrency !== defaultCurrency ? (
+                    `1 ${defaultCurrency} = ${(exchangeRates[targetCurrency] / exchangeRates[defaultCurrency]).toLocaleString(undefined, { maximumFractionDigits: targetCurrency === "VND" ? 0 : 4 })} ${targetCurrency}`
                   ) : (
                     `1 ${sendCurrency} = ${sendCurrency === defaultCurrency
                       ? "1.00"
@@ -658,8 +658,8 @@ useEffect(() => {
                 <View style={styles.calcRow}>
                   <Text style={styles.calcLabel}>Exchange Rate</Text>
                   <Text style={[styles.calcValBold, { color: theme.text }]}>
-                    {sendCurrency === "USD" && targetCurrency !== "USD" ? (
-                      `1 USD = ${(exchangeRates[targetCurrency] / exchangeRates["USD"]).toLocaleString(undefined, { maximumFractionDigits: targetCurrency === "VND" ? 0 : 4 })} ${targetCurrency}`
+                    {sendCurrency === defaultCurrency && targetCurrency !== defaultCurrency ? (
+                      `1 ${defaultCurrency} = ${(exchangeRates[targetCurrency] / exchangeRates[defaultCurrency]).toLocaleString(undefined, { maximumFractionDigits: targetCurrency === "VND" ? 0 : 4 })} ${targetCurrency}`
                     ) : (
                       `1 ${sendCurrency} = ${sendCurrency === defaultCurrency
                         ? "1.00"

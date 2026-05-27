@@ -26,7 +26,7 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useApp, Transaction, useTheme } from "../context";
+import { useApp, Transaction, useTheme, CURRENCY_SYMBOLS } from "../context";
 import { BottomSheet } from "./BottomSheet";
 import { AnimatedButton } from "./AnimatedButton";
 
@@ -37,23 +37,21 @@ export function TransactionHistory() {
     activeFundingSourceId,
     defaultCurrency,
     darkMode,
+    exchangeRates,
   } = useApp();
   const theme = useTheme();
 
-  const curSymbol = defaultCurrency === "USD" ? "$" : "₱";
+  const curSymbol = CURRENCY_SYMBOLS[defaultCurrency] || defaultCurrency;
 
   const formatAmount = (amt: number, txCurrency?: string) => {
     const targetCurrency = txCurrency || "PHP";
     if (targetCurrency === defaultCurrency) {
       return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-    if (targetCurrency === "PHP" && defaultCurrency === "USD") {
-      return (amt * 0.018).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    if (targetCurrency === "USD" && defaultCurrency === "PHP") {
-      return (amt / 0.018).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    return amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const targetPhpRate = exchangeRates[targetCurrency] || 1;
+    const defaultPhpRate = exchangeRates[defaultCurrency] || 1;
+    const converted = (amt / targetPhpRate) * defaultPhpRate;
+    return converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const primarySource = fundingSources.find((fs) => fs.id === activeFundingSourceId) || fundingSources[0];

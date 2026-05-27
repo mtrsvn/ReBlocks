@@ -16,6 +16,33 @@ import {
   getDocs 
 } from 'firebase/firestore';
 
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  PHP: "₱",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  AUD: "A$",
+  CAD: "C$",
+  SGD: "S$",
+  HKD: "HK$",
+  CNY: "元",
+  INR: "₹",
+  KRW: "₩",
+  THB: "฿",
+  MYR: "RM",
+  IDR: "Rp",
+  VND: "₫",
+  SAR: "SR",
+  AED: "DH",
+  TWD: "NT$",
+  QAR: "QR",
+  KWD: "KD",
+  OMR: "RO",
+  BHD: "BD",
+  ILS: "₪",
+};
+
 export interface FundingSource {
   id: string;
   name: string;
@@ -68,7 +95,7 @@ export interface UserProfile {
   KYCVerified: boolean;
   isAdmin: boolean;
   isVerified: boolean;
-  defaultCurrency: 'USD' | 'PHP';
+  defaultCurrency: string;
   pin?: boolean;
   userPin?: number | null;
   pinsetup?: string | null;
@@ -92,9 +119,9 @@ interface AppContextType {
   exchangeRates: { [key: string]: number };
   activeFundingSourceId: string;
   primaryPaymentId: string;
-  defaultCurrency: 'USD' | 'PHP';
+  defaultCurrency: string;
   darkMode: boolean;
-  setDefaultCurrency: (cur: 'USD' | 'PHP') => Promise<void>;
+  setDefaultCurrency: (cur: string) => Promise<void>;
   setActiveFundingSourceId: (id: string) => void;
   setPrimaryPaymentId: (id: string) => Promise<void>;
   setDarkMode: (isDark: boolean) => void;
@@ -112,7 +139,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [defaultCurrency, setDefaultCurrencyState] = useState<'USD' | 'PHP'>('USD');
+  const [defaultCurrency, setDefaultCurrencyState] = useState<string>('USD');
   const [darkMode, setDarkMode] = useState(false);
   const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [activeFundingSourceId, setActiveFundingSourceId] = useState('');
@@ -139,15 +166,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const apiRates = data.rates;
           const phpRate = apiRates['PHP'] || 58.42;
           
-          setExchangeRates({
+          const mappedRates: Record<string, number> = {
             'PHP': 1,
-            'SGD': (apiRates['SGD'] || 1.34) / phpRate,
-            'THB': (apiRates['THB'] || 34.65) / phpRate,
-            'VND': (apiRates['VND'] || 25450) / phpRate,
-            'MYR': (apiRates['MYR'] || 4.18) / phpRate,
-            'IDR': (apiRates['IDR'] || 16120) / phpRate,
-            'USD': 1 / phpRate,
+          };
+          Object.keys(apiRates).forEach((cur) => {
+            mappedRates[cur] = apiRates[cur] / phpRate;
           });
+          setExchangeRates(mappedRates);
         }
       } catch (err) {
         console.log("Failed to fetch live exchange rates: ", err);
@@ -270,7 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  const setDefaultCurrency = async (cur: 'USD' | 'PHP') => {
+  const setDefaultCurrency = async (cur: string) => {
     if (!auth.currentUser) return;
     const userDocRef = doc(db, "users", auth.currentUser.uid);
     await updateDoc(userDocRef, { defaultCurrency: cur });

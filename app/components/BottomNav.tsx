@@ -54,10 +54,10 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
   }, [active]);
 
   const handlePress = (id: Screen, index: number) => {
-    
+    if (id === active) return;
+
     Haptics.selectionAsync();
 
-    
     Animated.sequence([
       Animated.timing(scaleAnims[index], {
         toValue: 0.86,

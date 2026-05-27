@@ -618,6 +618,7 @@ export function AIChatScreen({
     exchangeRates,
     defaultCurrency,
     userProfile,
+    darkMode,
   } = useApp();
   const firstName = userProfile?.fullName?.split(" ")[0] || "there";
 
@@ -1069,6 +1070,7 @@ Respond ONLY with valid JSON.`;
                 onSubmitEditing={() => handleSend()}
                 placeholder='Try "Send ₱1000 to Maria"'
                 placeholderTextColor={theme.textSecondary}
+                keyboardAppearance={darkMode ? "dark" : "light"}
                 style={[styles.textInput, { color: theme.text }]}
               />
             </View>

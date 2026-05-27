@@ -369,7 +369,13 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           },
         },
-
+        {
+          icon: CreditCard,
+          label: "Default Currency",
+          sublabel: `Active: ${defaultCurrency}`,
+          color: "#10B981",
+          onPress: () => setShowCurrencySelector(true),
+        },
         {
           icon: HelpCircle,
           label: "Help & Support",
@@ -1140,36 +1146,52 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
         onClose={() => setShowCurrencySelector(false)}
         title="Select Default Currency"
       >
-        <View style={{ gap: 12, paddingBottom: 20 }}>
-          {[
-            { code: "USD", name: "USD — United States Dollar", flag: "🇺🇸" },
-            { code: "PHP", name: "PHP — Philippine Peso", flag: "🇵🇭" },
-          ].map((c) => {
-            const isSelected = defaultCurrency === c.code;
-            return (
-              <TouchableOpacity
-                key={c.code}
-                activeOpacity={0.8}
-                onPress={() => {
-                  setDefaultCurrency(c.code as any);
-                  setShowCurrencySelector(false);
-                  Alert.alert("Success", `Default currency set to ${c.code}!`);
-                }}
-                style={[
-                  styles.currencySelectRow,
-                  { backgroundColor: theme.background, borderColor: theme.border },
-                  isSelected && { borderColor: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.04)" }
-                ]}
-              >
-                <Text style={{ fontSize: 24, marginRight: 12 }}>{c.flag}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: theme.text }}>{c.name}</Text>
-                </View>
-                {isSelected && <CheckCircle size={18} color="#10B981" />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+          <View style={{ gap: 12, paddingBottom: 20 }}>
+            {[
+              { code: "USD", name: "USD — United States Dollar", flag: "🇺🇸" },
+              { code: "SAR", name: "SAR — Saudi Arabian Riyal", flag: "🇸🇦" },
+              { code: "AED", name: "AED — UAE Dirham", flag: "🇦🇪" },
+              { code: "HKD", name: "HKD — Hong Kong Dollar", flag: "🇭🇰" },
+              { code: "TWD", name: "TWD — New Taiwan Dollar", flag: "🇹🇼" },
+              { code: "JPY", name: "JPY — Japanese Yen", flag: "🇯🇵" },
+              { code: "KRW", name: "KRW — South Korean Won", flag: "🇰🇷" },
+              { code: "GBP", name: "GBP — British Pound", flag: "🇬🇧" },
+              { code: "CAD", name: "CAD — Canadian Dollar", flag: "🇨🇦" },
+              { code: "AUD", name: "AUD — Australian Dollar", flag: "🇦🇺" },
+              { code: "QAR", name: "QAR — Qatari Riyal", flag: "🇶🇦" },
+              { code: "KWD", name: "KWD — Kuwaiti Dinar", flag: "🇰🇼" },
+              { code: "OMR", name: "OMR — Omani Rial", flag: "🇴🇲" },
+              { code: "BHD", name: "BHD — Bahraini Dinar", flag: "🇧🇭" },
+              { code: "ILS", name: "ILS — Israeli New Shekel", flag: "🇮🇱" },
+              { code: "EUR", name: "EUR — Euro (Europe)", flag: "🇪🇺" },
+            ].map((c) => {
+              const isSelected = defaultCurrency === c.code;
+              return (
+                <TouchableOpacity
+                  key={c.code}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setDefaultCurrency(c.code);
+                    setShowCurrencySelector(false);
+                    Alert.alert("Success", `Default currency set to ${c.code}!`);
+                  }}
+                  style={[
+                    styles.currencySelectRow,
+                    { backgroundColor: theme.background, borderColor: theme.border },
+                    isSelected && { borderColor: "#10B981", backgroundColor: "rgba(16, 185, 129, 0.04)" }
+                  ]}
+                >
+                  <Text style={{ fontSize: 24, marginRight: 12 }}>{c.flag}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: theme.text }}>{c.name}</Text>
+                  </View>
+                  {isSelected && <CheckCircle size={18} color="#10B981" />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
       </BottomSheet>
 
       <BottomSheet

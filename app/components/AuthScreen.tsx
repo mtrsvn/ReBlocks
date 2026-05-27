@@ -209,6 +209,17 @@ export function AuthScreen({}: AuthScreenProps) {
       // Format date as YYYY-MM-DD
       const dobFormatted = dateOfBirth.toISOString().split('T')[0];
 
+      const countryToCurrencyMap: Record<string, string> = {
+        PH: "PHP",
+        SG: "SGD",
+        US: "USD",
+        TH: "THB",
+        VN: "VND",
+        MY: "MYR",
+        ID: "IDR",
+      };
+      const defaultCur = countryToCurrencyMap[selectedCountry?.code || "PH"] || "USD";
+
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         fullName,
@@ -225,7 +236,8 @@ export function AuthScreen({}: AuthScreenProps) {
         pinAttempt: 0,
         isLocked: false,
         lockedUntil: null,
-        primaryPayment: null
+        primaryPayment: null,
+        defaultCurrency: defaultCur
       });
 
       // Clear signup form and show verification screen
