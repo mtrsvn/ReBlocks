@@ -313,38 +313,69 @@ app.post("/api/didit/webhook", async (req, res) => {
     const payload = req.body;
     console.log("Received Didit Webhook Event payload:", JSON.stringify(payload));
 
-    const sessionId = payload.session_id || payload.data?.session_id || payload.id;
-    const status = payload.status || payload.data?.status || payload.decision?.status;
+    // Try multiple nested paths to find the Session ID
+    const sessionId = payload.session_id 
+      || payload.data?.session_id 
+      || payload.decision?.session_id 
+      || payload.decision?.id_verifications?.[0]?.session_id
+      || payload.id;
 
-    if (!sessionId) {
-      console.warn("[Webhook Warning] Received webhook with no identifiable session_id.");
-      return res.status(400).json({ success: false, error: "Missing session_id in payload" });
+    // Try multiple nested paths to find the Decision Status
+    const status = payload.status 
+      || payload.decision?.status 
+      || payload.decision?.id_verifications?.[0]?.status
+      || payload.data?.status;
+
+    // Try multiple nested paths to find the user's UID (vendor_data)
+    const uid = payload.vendor_data 
+      || payload.decision?.vendor_data 
+      || payload.decision?.id_verifications?.[0]?.vendor_data 
+      || payload.data?.vendor_data;
+
+    console.log(`[Webhook Parse] Extracted Session ID: ${sessionId}, Status: ${status}, UID (vendor_data): ${uid}`);
+
+    if (!sessionId && !uid) {
+      console.warn("[Webhook Warning] Received webhook with no identifiable session_id or vendor_data.");
+      return res.status(400).json({ success: false, error: "Missing session_id or vendor_data in payload" });
     }
 
     const isApproved = status === "APPROVED" || status === "Approved";
-    console.log(`[Webhook] Processing webhook for session: ${sessionId}. Status: ${status} (isApproved: ${isApproved})`);
+    console.log(`[Webhook] Processing webhook. Status: ${status} (isApproved: ${isApproved})`);
 
     if (db) {
-      const usersRef = db.collection("users");
-      const snapshot = await usersRef.where("kycSessionId", "==", sessionId).get();
-
-      if (snapshot.empty) {
-        console.log(`[Webhook] No user found matching kycSessionId: ${sessionId}`);
-        return res.status(404).json({ success: false, message: "No matching user found for session" });
-      }
-
-      const batch = db.batch();
-      snapshot.forEach(doc => {
-        batch.update(doc.ref, {
+      if (uid) {
+        // Direct Firestore update by UID is extremely reliable
+        const userRef = db.collection("users").doc(uid);
+        await userRef.update({
           kycStatus: status,
           KYCVerified: isApproved,
-          isVerified: isApproved
+          isVerified: isApproved,
+          kycSessionId: sessionId || ""
         });
-        console.log(`[Webhook Batch] Preparing update for user: ${doc.id}`);
-      });
+        console.log(`[Webhook Success] Direct Firestore update for UID ${uid} succeeded. KYCVerified: ${isApproved}`);
+      } else if (sessionId) {
+        // Fallback: search by kycSessionId
+        const usersRef = db.collection("users");
+        const snapshot = await usersRef.where("kycSessionId", "==", sessionId).get();
 
-      await batch.commit();
-      console.log(`[Webhook Success] Successfully updated all user profile matches in Firestore for session: ${sessionId}`);
+        if (snapshot.empty) {
+          console.log(`[Webhook] No user found matching kycSessionId: ${sessionId}`);
+          return res.status(404).json({ success: false, message: "No matching user found for session" });
+        }
+
+        const batch = db.batch();
+        snapshot.forEach(doc => {
+          batch.update(doc.ref, {
+            kycStatus: status,
+            KYCVerified: isApproved,
+            isVerified: isApproved
+          });
+          console.log(`[Webhook Batch] Preparing update for user: ${doc.id}`);
+        });
+
+        await batch.commit();
+        console.log(`[Webhook Success] Successfully updated user profile matches for session: ${sessionId}`);
+      }
     } else {
       console.warn("[Webhook Warning] Firestore db not available to process webhook.");
     }
