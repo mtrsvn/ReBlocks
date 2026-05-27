@@ -3,6 +3,29 @@ const express = require("express");
 const cors = require("cors");
 const { ethers } = require("ethers");
 const axios = require("axios");
+const admin = require("firebase-admin");
+
+// Initialize Firebase Admin SDK
+if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+  try {
+    // Replace literal newlines if private key is stored as string with escaped newlines
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: privateKey,
+      }),
+    });
+    console.log("Firebase Admin successfully initialized.");
+  } catch (err) {
+    console.error("Error initializing Firebase Admin:", err);
+  }
+} else {
+  console.warn("Firebase Admin credentials not fully configured in environment.");
+}
+
+const db = admin.apps.length > 0 ? admin.firestore() : null;
 
 const app = express();
 app.use(cors());
@@ -87,6 +110,108 @@ app.post("/api/chat", async (req, res) => {
   } catch (error) {
     console.error("Backend Proxy Error:", error);
     res.status(500).json({ error: { message: error.message } });
+  }
+});
+
+// Create Didit Verification Session
+app.post("/api/didit/create-session", async (req, res) => {
+  try {
+    const { uid, callback } = req.body;
+    if (!uid) {
+      return res.status(400).json({ success: false, error: "Missing uid parameter" });
+    }
+
+    const API_KEY = process.env.DIDIT_API_KEY;
+    const WORKFLOW_ID = process.env.DIDIT_WORKFLOW_ID;
+    const callbackUrl = callback || process.env.DIDIT_CALLBACK_URL || "reblocks://kyc-complete";
+
+    if (!API_KEY || !WORKFLOW_ID) {
+      console.error("Missing Didit API Key or Workflow ID in server configuration.");
+      return res.status(500).json({ success: false, error: "Didit configuration missing on server" });
+    }
+
+    const url = "https://verification.didit.me/v3/session/";
+
+    console.log(`Requesting Didit session creation for UID: ${uid}...`);
+    const response = await axios.post(
+      url,
+      {
+        workflow_id: WORKFLOW_ID,
+        vendor_data: uid,
+        callback: callbackUrl,
+        callback_method: "both",
+      },
+      {
+        headers: {
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(`Didit Session Created Successfully for UID: ${uid}`);
+    res.json({
+      success: true,
+      data: {
+        url: response.data.url,
+        session_id: response.data.session_id,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating Didit session:", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data?.message || error.message || "Failed to create verification session",
+    });
+  }
+});
+
+// Verify Didit Session and update user in Firestore
+app.post("/api/didit/verify-session", async (req, res) => {
+  try {
+    const { session_id, uid } = req.body;
+    if (!session_id || !uid) {
+      return res.status(400).json({ success: false, error: "Missing session_id or uid parameter" });
+    }
+
+    const API_KEY = process.env.DIDIT_API_KEY;
+    if (!API_KEY) {
+      return res.status(500).json({ success: false, error: "Didit API key is not configured on the server" });
+    }
+
+    const url = `https://verification.didit.me/v3/session/${session_id}/decision/`;
+
+    console.log(`Fetching Didit decision status for session: ${session_id}...`);
+    const response = await axios.get(url, {
+      headers: {
+        "x-api-key": API_KEY,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const decision = response.data;
+    console.log(`Didit verification decision status for session ${session_id}: ${decision.status}`);
+
+    const isApproved = decision.status === "APPROVED" || decision.status === "Approved";
+
+    if (isApproved) {
+      if (db) {
+        const userRef = db.collection("users").doc(uid);
+        await userRef.update({ KYCVerified: true });
+        console.log(`Successfully marked user profile ${uid} as KYCVerified: true in Firestore.`);
+      } else {
+        console.warn("Firestore db instance not initialized; skipped Firestore update.");
+      }
+      return res.json({ success: true, verified: true, status: decision.status });
+    } else {
+      return res.json({ success: true, verified: false, status: decision.status });
+    }
+  } catch (error) {
+    console.error("Error verifying Didit session:", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data?.message || error.message || "Failed to verify session decision status",
+    });
   }
 });
 

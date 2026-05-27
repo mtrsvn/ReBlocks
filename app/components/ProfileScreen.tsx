@@ -1254,8 +1254,38 @@ export function ProfileScreen({ onLogout, onPinRemovalShow }: ProfileScreenProps
                       if (result.success && result.data && result.data.url) {
                         setKycLoading(false); // Stop loading before opening browser
                         // Use openAuthSessionAsync to safely intercept the redirect URL and auto-close
-                        await WebBrowser.openAuthSessionAsync(result.data.url, redirectUrl);
+                        const authSessionResult = await WebBrowser.openAuthSessionAsync(result.data.url, redirectUrl);
                         setShowKycModal(false); // Close modal only after browser returns
+
+                        if (authSessionResult.type === 'success' && authSessionResult.url) {
+                          // Extract verificationSessionId and status from the redirect URL
+                          const parsed = Linking.parse(authSessionResult.url);
+                          const sessionId = parsed.queryParams?.verificationSessionId as string;
+
+                          if (sessionId) {
+                            // Automatically call the backend verify-session endpoint to query Didit decision status
+                            // and update Firestore user record securely
+                            try {
+                              const verifyResponse = await fetch(`${API_URL}/api/didit/verify-session`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ session_id: sessionId, uid })
+                              });
+                              const verifyResult = await verifyResponse.json();
+                              
+                              if (verifyResult.success && verifyResult.verified) {
+                                Alert.alert("Verification Success", "Congratulations! Your identity has been successfully verified.");
+                              } else {
+                                Alert.alert(
+                                  "Verification Pending", 
+                                  `Status: ${verifyResult.status || "Under Review"}. We will finalize your verification shortly.`
+                                );
+                              }
+                            } catch (err) {
+                              console.error("Failed to verify Didit session:", err);
+                            }
+                          }
+                        }
                       } else {
                         throw new Error(result.error || "Failed to create verification session");
                       }
