@@ -15,13 +15,19 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.matersvendev.reblocksmobile",
+      "icon": {
+        "light": "./assets/assets/ios-light.png",
+        "dark": "./assets/assets/ios-dark.png",
+        "tinted": "./assets/assets/ios-tinted.png"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/assets/adaptive-icon-foreground.png",
+        "backgroundImage": "./assets/assets/adaptive-icon-background.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
