@@ -12,7 +12,18 @@ By making blockchain invisible to the end user, ReBlocks delivers a seamless rem
 
 ## 🔗 Live Links & Interactive Demos
 
-[🌐 **Landing Page**](https://reblocksapp.vercel.app/) &nbsp;&nbsp;•&nbsp;&nbsp; [🤖 **Android APK**](https://expo.dev/artifacts/eas/4bUh4PB8gp17tgFwH2k2yX.apk) &nbsp;&nbsp;•&nbsp;&nbsp; [🍏 **iOS Build**](https://expo.dev/artifacts/eas/tpH8F7twbEz7peNeFD3yY7.tar.gz)
+[🌐 **Landing Page**](https://reblocksapp.vercel.app/) &nbsp;&nbsp;•&nbsp;&nbsp; [🎥 **Video Demo**](https://x.com/gubsiclez/status/2058208780131999981?s=20) &nbsp;&nbsp;•&nbsp;&nbsp; [🤖 **Android APK**](https://expo.dev/artifacts/eas/4bUh4PB8gp17tgFwH2k2yX.apk) &nbsp;&nbsp;•&nbsp;&nbsp; [🍏 **iOS Build**](https://expo.dev/artifacts/eas/tpH8F7twbEz7peNeFD3yY7.tar.gz)
+
+---
+
+## 📖 Build Diaries (#MorphBuildSprint)
+
+We documented our build journey and progress publicly on X (Twitter):
+
+- **Build Diary #1:** [Architecture & Designing invisible Web3 UX](https://x.com/gubsiclez/status/2057131970766016535?s=20)
+- **Build Diary #2:** [Integrating Morph L2 & smart payment routing](https://x.com/gubsiclez/status/2057517699413254325?s=20)
+- **Build Diary #3:** [Building the x402 Conversational Agent interface](https://x.com/gubsiclez/status/2057884201450709293?s=20)
+- **Build Diary #4:** [Final polish, seamless onboarding, and local payout systems](https://x.com/gubsiclez/status/2060018033184378886?s=20)
 
 ---
 
