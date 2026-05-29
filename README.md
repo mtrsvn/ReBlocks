@@ -63,23 +63,32 @@ ReBlocks bridges Web2 convenience with Web3 efficiency by routing stablecoin ass
 
 ### Prerequisites
 
-- Node.js
-- npm or yarn
-- Expo Go app on your physical device (optional, for native testing)
+*   **npm / yarn** — Package manager for JavaScript
+*   **Git** — Distributed version control system
+*   **Node.js** — JavaScript runtime environment
+*   **Expo Go App** — Client to run Expo projects
 
 ### Installation & Execution
 
-1. Clone this repository:
+1. **Clone the Repository**
+   Open your terminal and clone the ReBlocks project code.
    ```bash
    git clone https://github.com/mtrsvn/ReBlocks
    cd ReBlocks
    ```
-2. Install client dependencies:
+
+2. **Install Client Dependencies**
+   Install the required node packages for the project.
    ```bash
    npm install
    ```
-3. Start the React Native development server:
+
+3. **Start the Expo Development Server**
+   Launch the development server to run React Native.
    ```bash
    npx expo start
    ```
-   _Scan the QR code in your terminal with your phone's camera (iOS) or Expo Go app (Android) to run._
+
+4. **Scan and Run**
+   Scan the QR code displayed in your terminal using your physical device's camera to load the application instantly.
+
