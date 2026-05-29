@@ -6,7 +6,7 @@ Traditional remittance services often charge high fees, include hidden exchange 
 
 Users can send or receive money using familiar payment methods such as card or bank transfer. Funds are converted into USDC, securely routed through a smart contract on Morph for verification and transparent on-chain tracking, then converted back into local currency and delivered directly through GCash, Maya, or bank accounts.
 
-By making blockchain invisible to the end user, ReBlocks delivers a seamless remittance experience while enabling lower fees, faster settlement, and 24/7 transfers. Our goal is to provide a more accessible and low-cost financial solution for workers and families across the Philippines and Southeast Asia.
+By making blockchain invisible to the end user, ReBlocks delivers a seamless remittance experience while enabling lower fees, faster settlement, and 24/7 transfers. Our goal is to provide a more accessible and low-cost financial solution for workers and families across the Philippines and Southeast Asia, helping bridge the gap between traditional finance and modern blockchain technology while improving financial accessibility for underserved communities. ReBlocks also aims to empower users with secure, reliable financial services for international transactions.
 
 ---
 
@@ -63,15 +63,16 @@ ReBlocks bridges Web2 convenience with Web3 efficiency by routing stablecoin ass
 
 ### Prerequisites
 
-*   **npm / yarn** — Package manager for JavaScript
-*   **Git** — Distributed version control system
-*   **Node.js** — JavaScript runtime environment
-*   **Expo Go App** — Client to run Expo projects
+- **npm / yarn** — Package manager for JavaScript
+- **Git** — Distributed version control system
+- **Node.js** — JavaScript runtime environment
+- **Expo Go App** — Client to run Expo projects
 
 ### Installation & Execution
 
 1. **Clone the Repository**
    Open your terminal and clone the ReBlocks project code.
+
    ```bash
    git clone https://github.com/mtrsvn/ReBlocks
    cd ReBlocks
@@ -79,16 +80,17 @@ ReBlocks bridges Web2 convenience with Web3 efficiency by routing stablecoin ass
 
 2. **Install Client Dependencies**
    Install the required node packages for the project.
+
    ```bash
    npm install
    ```
 
 3. **Start the Expo Development Server**
    Launch the development server to run React Native.
+
    ```bash
    npx expo start
    ```
 
 4. **Scan and Run**
    Scan the QR code displayed in your terminal using your physical device's camera to load the application instantly.
-
