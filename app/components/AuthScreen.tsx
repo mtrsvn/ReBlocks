@@ -817,7 +817,7 @@ export function AuthScreen({}: AuthScreenProps) {
                   Please open the link in your email inbox to verify your account, then click the button below.
                 </Text>
 
-                <AnimatedButton disabled={loading} onPress={checkVerification} style={[styles.btnWrapper, { marginTop: 24, width: "100%" }]}>
+                <AnimatedButton disabled={loading} onPress={checkVerification} style={[styles.btnWrapper, { marginTop: 24, width: "100%", marginBottom: 12 }]}>
                   <LinearGradient colors={["#10B981", "#059669"]} style={styles.btn}>
                     {loading ? (
                       <ActivityIndicator size="small" color="#ffffff" />
@@ -826,6 +826,10 @@ export function AuthScreen({}: AuthScreenProps) {
                     )}
                   </LinearGradient>
                 </AnimatedButton>
+
+                <Text style={{ fontSize: 12, fontWeight: "600", color: "#64748b", marginBottom: 16, textAlign: "center" }}>
+                  Can't find the email? Please check your <Text style={{ color: "#ef4444", fontWeight: "700" }}>Spam</Text> or <Text style={{ color: "#ef4444", fontWeight: "700" }}>Junk</Text> folder.
+                </Text>
 
                 <TouchableOpacity 
                   disabled={loading} 
