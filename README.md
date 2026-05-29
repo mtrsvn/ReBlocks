@@ -20,10 +20,10 @@ By making blockchain invisible to the end user, ReBlocks delivers a seamless rem
 
 We documented our build journey and progress publicly on X (Twitter):
 
-- **Build Diary #1:** [Architecture & Designing invisible Web3 UX](https://x.com/gubsiclez/status/2057131970766016535?s=20)
-- **Build Diary #2:** [Integrating Morph L2 & smart payment routing](https://x.com/gubsiclez/status/2057517699413254325?s=20)
-- **Build Diary #3:** [Building the x402 Conversational Agent interface](https://x.com/gubsiclez/status/2057884201450709293?s=20)
-- **Build Diary #4:** [Final polish, seamless onboarding, and local payout systems](https://x.com/gubsiclez/status/2060018033184378886?s=20)
+- [Build Diary #1](https://x.com/gubsiclez/status/2057131970766016535?s=20)
+- [Build Diary #2](https://x.com/gubsiclez/status/2057517699413254325?s=20)
+- [Build Diary #3](https://x.com/gubsiclez/status/2057884201450709293?s=20)
+- [Build Diary #4](https://x.com/gubsiclez/status/2060018033184378886?s=20)
 
 ---
 
